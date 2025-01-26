@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    ports:
+      - "5000:3000" # Map host port 5000 to container port 3000
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./apps/server:/app # Sync local files for development
+    depends_on:
+      - database
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "3000:3000" # Map host port 3000 to container port 3000
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://user:password@database:5432/demo
+      - API_URL=http://localhost:5000
+    volumes:
+      - ./apps/web:/app # Sync local files for development
+    depends_on:
+      - server
+
+  database:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: demo
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

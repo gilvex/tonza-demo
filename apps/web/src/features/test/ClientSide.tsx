@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 export default function ClientSide() {
   const [greeting, setGreeting] = useState("Loading...");
   useEffect(() => {
-    trpc.hello
-      .query({ name: `Tom` })
-      .then(({ greeting }) => setGreeting(greeting));
+    trpc.users.getUserById
+      .query({ userId: `Tom` })
+      .then(({ name }) => setGreeting(name));
   }, []);
   return <p>I am client side: {greeting}</p>;
 }
