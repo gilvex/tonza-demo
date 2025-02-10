@@ -65,7 +65,7 @@ export function MineGame() {
   };
 
   return (
-    <div className="bg-[#01021E] size-full aspect-square rounded-2xl max-h-[600px] p-5 grid grid-cols-5 gap-3">
+    <div className="bg-[#01021E] size-full aspect-square rounded-2xl max-h-[600px] p-5 grid grid-cols-5 gap-1.5 sm:gap-3">
       {grid.map((cell, index) => (
         <MineButton
           key={index}

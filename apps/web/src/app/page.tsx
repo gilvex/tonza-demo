@@ -38,30 +38,30 @@ export default async function Page() {
       <div
         className={cn(
           "from-[#09122F] from-70% to-[#1b60eba2] bg-gradient-to-b w-full rounded-2xl p-5 flex flex-col gap-4 max-w-[600px]",
-          "transition-all text-base md:text-lg lg:text-xl xl:text-2xl"
+          "transition-all text-[3vw] md:text-2xl xl:text-3xl"
         )}
       >
         <div className="flex justify-center items-center">
           <div className="font-bold border border-[#1B265C] rounded-lg py-1.5 px-2 w-fit ">
             1.13x
           </div>
-          <div className="bg-[#1B265C] h-0.5 w-full" />
+          <div className="bg-[#1B265C] h-0.5 w-full min-w-1" />
           <div className="font-bold border border-[#1B265C] rounded-lg py-1.5 px-2 w-fit ">
             1.60x
           </div>
-          <div className="bg-[#1B265C] h-0.5 w-full" />
+          <div className="bg-[#1B265C] h-0.5 w-full min-w-1" />
           <div className="font-bold border border-[#1B265C] rounded-lg py-1.5 px-2 w-fit ">
             2.0x
           </div>
-          <div className="bg-[#1B265C] h-0.5 w-full" />
+          <div className="bg-[#1B265C] h-0.5 w-full min-w-1" />
           <div className="font-bold border border-[#1B265C] rounded-lg py-1.5 px-2 w-fit ">
             3.0x
           </div>
-          <div className="bg-[#1B265C] h-0.5 w-full" />
+          <div className="bg-[#1B265C] h-0.5 w-full min-w-1" />
           <div className="font-bold border border-[#1B265C] rounded-lg py-1.5 px-2 w-fit ">
             4.0x
           </div>
-          <div className="bg-[#1B265C] h-0.5 w-full" />
+          <div className="bg-[#1B265C] h-0.5 w-full min-w-1" />
           <div className="font-bold border border-[#1B265C] rounded-lg py-1.5 px-2 w-fit ">
             5.0x
           </div>
