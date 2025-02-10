@@ -37,7 +37,7 @@ export default async function Page() {
       </div>
       <div
         className={cn(
-          "from-[#09122F] from-70% to-[#1b60eba2] bg-gradient-to-b w-full rounded-2xl p-5 flex flex-col gap-4 max-w-[500px]",
+          "from-[#09122F] from-70% to-[#1b60eba2] bg-gradient-to-b w-full rounded-2xl p-5 flex flex-col gap-4 max-w-[600px]",
           "transition-all text-base md:text-lg lg:text-xl xl:text-2xl"
         )}
       >
@@ -66,7 +66,7 @@ export default async function Page() {
             5.0x
           </div>
         </div>
-        <div className="bg-[#01021E] size-full aspect-square rounded-2xl max-h-[500px] p-4 grid grid-cols-5 gap-2">
+        <div className="bg-[#01021E] size-full aspect-square rounded-2xl max-h-[600px] p-5 grid grid-cols-5 gap-3">
           {Array.from({ length: 25 }).map((_, i) => (
             <MineButton key={i} />
           ))}

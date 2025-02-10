@@ -8,12 +8,12 @@ export function MineButton() {
   const [isPressed, setIsPressed] = useState(false);
   const [isShowGem, setShowGem] = useState(false);
   const [isBomb, setBomb] = useState(false);
-  // shadow inner
+
   return (
     <button
       disabled={isShowGem || isBomb}
       className={cn(
-        `relative w-full h-5/6 rounded-lg bg-blue-600 transition-all duration-200`,
+        `relative w-full aspect-[1/0.85] rounded-lg bg-blue-600 transition-all duration-200 flex items-center justify-center overflow-hidden`,
         isPressed
           ? "translate-y-1.5 shadow-[0px_0px_0px_0px_rgb(14,51,132)] bg-blue-700"
           : "translate-y-0 shadow-[0px_8px_0px_0px_rgb(14,51,132)]",
