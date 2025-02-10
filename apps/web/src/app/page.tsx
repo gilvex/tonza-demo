@@ -1,5 +1,5 @@
 import { Button } from "@web/components/ui/button";
-import { MineButton } from "@web/features/games/mines";
+import { MineGame } from "@web/features/games/mines";
 import { cn } from "@web/lib/utils";
 import { ArrowLeft, ChevronDown, Plus } from "lucide-react";
 import Image from "next/image";
@@ -66,11 +66,7 @@ export default async function Page() {
             5.0x
           </div>
         </div>
-        <div className="bg-[#01021E] size-full aspect-square rounded-2xl max-h-[600px] p-5 grid grid-cols-5 gap-3">
-          {Array.from({ length: 25 }).map((_, i) => (
-            <MineButton key={i} />
-          ))}
-        </div>
+        <MineGame />
       </div>
     </div>
   );
