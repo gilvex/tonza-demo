@@ -49,7 +49,7 @@ function RootInner({ children }: PropsWithChildren) {
     <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
       <ThemeProvider
         attribute="class"
-        defaultTheme="system"
+        defaultTheme="dark"
         enableSystem
         disableTransitionOnChange
       >
