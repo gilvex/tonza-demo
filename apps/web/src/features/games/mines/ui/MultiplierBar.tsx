@@ -35,7 +35,7 @@ export default function MultiplierBar({
   multipliers,
 }: MultiplierBarProps) {
   return (
-    <div className="flex justify-center items-center max-w-[400px]">
+    <div className="flex justify-center items-center w-full">
       {multipliers.map((multiplier, index) => {
         // In active mode, every box up to the current active index is forced blue.
         // In bomb state all boxes are forced red.
@@ -74,7 +74,7 @@ export default function MultiplierBar({
             />
             {index < multipliers.length - 1 && (
               <div
-                className="h-0.5 grow w-2"
+                className="h-0.5 w-2"
                 style={{ backgroundColor: boxColor.growColor }}
               />
             )}

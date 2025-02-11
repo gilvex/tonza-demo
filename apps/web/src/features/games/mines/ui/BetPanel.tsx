@@ -45,7 +45,7 @@ export function BetPanel({
   };
 
   return (
-    <div className="bg-[#09122F] p-5 rounded-2xl w-full flex flex-col gap-3 max-w-[600px] lg:h-full">
+    <div className="bg-[#09122F] p-5 rounded-2xl w-full flex flex-col gap-3 lg:max-w-full lg:h-full">
       {/* Bet Amount Section */}
       <div className="flex flex-col gap-1.5">
         <p className="text-[#9EA8DD]">Bet Amount:</p>

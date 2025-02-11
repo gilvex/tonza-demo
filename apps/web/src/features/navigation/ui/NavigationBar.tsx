@@ -21,7 +21,7 @@ export function NavigationBar({
   return (
     <div id="nav" className="flex items-center justify-between w-full">
       <Button
-        className="rounded-full size-[10vw] sm:size-10 max-w-36 max-h-36"
+        className="rounded-full size-10 max-w-36 max-h-36"
         size="icon"
         variant="secondary"
         onClick={onBack}
@@ -29,13 +29,13 @@ export function NavigationBar({
         <ArrowLeft />
       </Button>
 
-      <div className="border-[#1B265C] border rounded-full p-2 flex justify-start items-center gap-2 w-[50vw] text-[4vw] sm:text-lg lg:w-60 max-w-[300px]">
+      <div className="border-[#1B265C] border rounded-full p-2 flex justify-start items-center gap-2 w-fit text-[3vw] sm:text-lg lg:w-60 max-w-[300px]">
         <Image
           src="/ton.svg"
           alt="ton"
           width={128}
           height={128}
-          className="size-[8vw] sm:size-8 max-w-32 max-h-32"
+          className="size-8 max-w-32 max-h-32"
         />
         <div className="flex justify-center items-center">
           <p className="font-bold">{integerPart}</p>
@@ -45,7 +45,7 @@ export function NavigationBar({
         <div className="grow flex justify-end">
           <Button
             size="icon"
-            className="rounded-full from-[#24ACFB] to-[#078CEA] bg-gradient-to-b max-w-[8vw] max-h-[8vw] sm:max-w-8 sm:max-h-8"
+            className="rounded-full from-[#24ACFB] to-[#078CEA] bg-gradient-to-b max-w-8 max-h-8"
             onClick={onAddFunds}
           >
             <Plus className="text-white min-w-6 min-h-6" />

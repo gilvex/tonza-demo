@@ -108,7 +108,7 @@ export function MineGame({
           value={idleAnimationVariant}
         />} */}
 
-      <div className="bg-[#01021E] size-full aspect-square rounded-2xl p-5 grid grid-cols-5 gap-1.5 sm:gap-3 relative">
+<div className="bg-[#01021E] mx-auto w-full max-w-md aspect-square rounded-2xl p-5 grid grid-cols-5 gap-2 relative">
         {gamePhase === "initial"
           ? Array.from({ length: 25 }).map((_, index) => (
               <MineButton
