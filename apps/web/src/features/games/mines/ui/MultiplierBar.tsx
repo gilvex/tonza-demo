@@ -1,27 +1,6 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import MultiplierBox from "./MultiplierBox";
 import { GamePhase, Multiplier } from "../lib/types";
-
-// const defaultMultipliers: Multiplier] = [
-//   {
-//     value: "1.13x",
-//     factor: 1.13,
-//     borderColor: "#1B62EB",
-//     backgroundColor: "#1B62EB",
-//     growColor: "#1B62EB",
-//   },
-//   {
-//     value: "1.60x",
-//     factor: 1.6,
-//     borderColor: "#FB2468",
-//     backgroundColor: "#FB2468",
-//     growColor: "#FB2468",
-//   },
-//   { value: "2.0x", factor: 2.0, borderColor: "#FB2468", growColor: "#FB2468" },
-//   { value: "3.0x", factor: 3.0, borderColor: "#1B265C", growColor: "#1B265C" },
-//   { value: "4.0x", factor: 4.0, borderColor: "#1B265C", growColor: "#1B265C" },
-//   { value: "5.0x", factor: 5.0, borderColor: "#1B265C", growColor: "#1B265C" },
-// ];
 
 interface MultiplierBarProps {
   gamePhase: GamePhase;
@@ -34,13 +13,37 @@ export default function MultiplierBar({
   currentMultiplier,
   multipliers,
 }: MultiplierBarProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const multiplierRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Scroll into view when currentMultiplier changes
+  useEffect(() => {
+    const currentIndex = multipliers.findIndex(
+      (multiplier) => multiplier.factor === currentMultiplier
+    );
+
+    const multiplierRef = !currentMultiplier
+      ? multiplierRefs.current[0]
+      : multiplierRefs.current[currentIndex];
+
+    if (multiplierRef) {
+      multiplierRef?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "center",
+      });
+    }
+  }, [currentMultiplier, multipliers]);
+
   return (
     <div className="w-full flex justify-center max-w-sm lg:max-w-xl">
-      <div className="flex items-center overflow-x-auto snap-x snap-mandatory">
+      <div
+        ref={containerRef}
+        className="flex items-center overflow-x-auto snap-x snap-mandatory"
+      >
         {multipliers.map((multiplier, index) => {
-          // In active mode, every box up to the current active index is forced blue.
-          // In bomb state all boxes are forced red.
           let boxColor = multiplier;
+
           if (
             ["cashOut", "result:win"].includes(gamePhase) &&
             multiplier.factor <= currentMultiplier
@@ -51,11 +54,10 @@ export default function MultiplierBar({
               backgroundColor: "#1B62EB",
               growColor: "#1B62EB",
             };
-
-            if (index < multipliers.length - 1) {
+            if (index < multipliers.length - 1)
               multipliers[index + 1].borderColor = "#1B62EB";
-            }
           }
+
           if (
             ["bombed", "result:lose"].includes(gamePhase) &&
             multiplier.factor <= currentMultiplier
@@ -66,20 +68,24 @@ export default function MultiplierBar({
               backgroundColor: "#FB2468",
               growColor: "#FB2468",
             };
-
-            if (index < multipliers.length - 1) {
+            if (index < multipliers.length - 1)
               multipliers[index + 1].borderColor = "#FB2468";
-            }
           }
+
           return (
             <React.Fragment key={index}>
-            <div className="snap-start w-20 flex-shrink-0">
-              <MultiplierBox
+              <div
+                ref={(el) => {
+                  multiplierRefs.current[index] = el;
+                }}
+                className="snap-start w-20 flex-shrink-0"
+              >
+                <MultiplierBox
                   value={boxColor.value}
                   borderColor={boxColor.borderColor}
                   backgroundColor={boxColor.backgroundColor}
                 />
-            </div>
+              </div>
               {index < multipliers.length - 1 && (
                 <div
                   className="h-0.5 min-w-2"
