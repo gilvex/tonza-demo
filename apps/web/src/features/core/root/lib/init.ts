@@ -12,7 +12,6 @@ import {
  * Initializes the application and configures its dependencies.
  */
 export function init(debug: boolean): void {
-  console.log("initting twa");
   // Set @telegram-apps/sdk-react debug mode.
   setDebug(debug);
 

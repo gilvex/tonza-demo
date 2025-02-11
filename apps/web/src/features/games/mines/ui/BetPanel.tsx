@@ -118,6 +118,7 @@ export function BetPanel({
             step={1}
             onValueChange={handleSliderChange}
             className={gamePhase !== "initial" ? "animate-pulse" : ""}
+            rangeClassName={cn("transition-colors duration-1000", mines > 20 && "from-[#FB2468] to-[#f4477e]")}
           />
           <p className="text-[#9EA8DD]">24</p>
         </div>
@@ -126,7 +127,7 @@ export function BetPanel({
       {/* Place Bet Button */}
       <Button
         className={cn(
-          "from-[#85DAFF] to-60% font-bold to-[#5991FE] bg-gradient-to-br hover:bg-[#161f4b]",
+          "from-[#85DAFF] to-60% font-bold to-[#5991FE] bg-gradient-to-br hover:bg-[#161f4b] ",
           gamePhase === "running" &&
             "bg-[#1B265C] text-white hover:bg-[#161f4b]",
           (gamePhase === "cashOut" || gamePhase === "result:win") &&

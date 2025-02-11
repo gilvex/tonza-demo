@@ -20,7 +20,7 @@ export function MiniAppBackground() {
       if (!isMounted || !isAvailable) {
         await miniApp.mount().catch(console.warn);
       }
-      console.log("TWA MA SET:", backgroundColor, getComputedHSL("--background"));
+
       try {
         setMiniAppBackgroundColor(backgroundColor as `#${string}`);
         setMiniAppHeaderColor(backgroundColor as `#${string}`);

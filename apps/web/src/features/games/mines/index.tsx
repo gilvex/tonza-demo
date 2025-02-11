@@ -89,7 +89,6 @@ export function MineGame({
 
   useEffect(() => {
     setTimeout(() => {
-      console.log(idleAnimationVariant);
       setIAV((iav) =>
         Math.min(Math.max(1, Math.random() > 0.5 ? iav - 1 : iav + 1), 10)
       );
@@ -98,7 +97,7 @@ export function MineGame({
 
   return (
     <>
-      {<input
+      {/* {<input
           type="number"
           max={10}
           min={1}
@@ -107,7 +106,7 @@ export function MineGame({
             setIAV(Number(e.target.value));
           }}
           value={idleAnimationVariant}
-        />}
+        />} */}
 
       <div className="bg-[#01021E] size-full aspect-square rounded-2xl p-5 grid grid-cols-5 gap-1.5 sm:gap-3 relative">
         {gamePhase === "initial"

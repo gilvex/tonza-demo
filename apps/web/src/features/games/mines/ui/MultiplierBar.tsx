@@ -34,8 +34,6 @@ export default function MultiplierBar({
   currentMultiplier,
   multipliers,
 }: MultiplierBarProps) {
-  console.log(multipliers, currentMultiplier, gamePhase);
-
   return (
     <div className="flex justify-center items-center max-w-[400px]">
       {multipliers.map((multiplier, index) => {
