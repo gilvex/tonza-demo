@@ -14,7 +14,7 @@ const MultiplierBox: React.FC<MultiplierBoxProps> = ({
 }) => {
   return (
     <div
-      className={cn("font-bold border rounded-lg py-1.5 px-2 w-16 text-center")}
+      className={cn("font-bold border rounded-lg py-1.5 px-2 w-20 text-center")}
       style={{ borderColor, backgroundColor }}
     >
       {value}
