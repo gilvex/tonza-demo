@@ -38,7 +38,9 @@ export function MineGame({
   const [grid, setGrid] = useState<Cell[]>([]);
   const [isGameover, setGameover] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [idleAnimationVariant, setIAV] = useState(7);
+  const [idleAnimationVariant, setIAV] = useState(
+    Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
+  );
 
   useEffect(() => {
     if (gamePhase === "initial") {
@@ -96,16 +98,16 @@ export function MineGame({
 
   return (
     <>
-      {/* <input
-        type="number"
-        max={10}
-        min={1}
-        onChange={(e) => {
-          console.log(Number(e.target.value));
-          setIAV(Number(e.target.value));
-        }}
-        value={idleAnimationVariant}
-      /> */}
+      {<input
+          type="number"
+          max={10}
+          min={1}
+          onChange={(e) => {
+            console.log(Number(e.target.value));
+            setIAV(Number(e.target.value));
+          }}
+          value={idleAnimationVariant}
+        />}
 
       <div className="bg-[#01021E] size-full aspect-square rounded-2xl p-5 grid grid-cols-5 gap-1.5 sm:gap-3 relative">
         {gamePhase === "initial"
@@ -211,7 +213,9 @@ export function MineButton({
   const rainbowMode = idleAnimationVariant == 10;
   const backgroundColor = rainbowMode
     ? `hsl(${hue}, ${saturation}%, ${lightness}%)`
-    : "";
+    : isPressed
+      ? "rgb(29 78 216 / var(--tw-bg-opacity, 1))"
+      : "";
 
   return (
     <motion.button
@@ -229,14 +233,12 @@ export function MineButton({
         if (isPressed) setIsCancelled(true);
       }}
       className={cn(
-        `relative w-full aspect-[1/0.85] rounded-lg bg-blue-600 transition-all duration-200 flex items-center justify-center overflow-hidden`,
+        `relative w-full aspect-[1/0.85] rounded-lg bg-blue-600 flex items-center justify-center overflow-hidden`,
         cell.isRevealed || isGameover
           ? cell.isBomb
-            ? "bg-[#01021E] border-2 border-[#FB2468] shadow-[0px_8px_0px_0px_rgba(251,36,104,0.44),inset_0_0_10px_5px_rgba(251,36,104,0.6)]"
-            : "bg-[#183934] border-2 border-[#1ED80F] shadow-[0px_8px_0px_0px_rgba(30,216,15,0.68),inset_0_0_10px_5px_rgba(30,216,15,0.6)]"
-          : isPressed
-            ? "translate-y-1.5 shadow-[0px_0px_0px_0px_rgb(14,51,132)] bg-blue-700"
-            : "translate-y-0 shadow-[0px_8px_0px_0px_rgb(14,51,132)]",
+            ? "bg-[#01021E] border-2 border-[#FB2468] !shadow-[0px_8px_0px_0px_rgba(251,36,104,0.44),inset_0_0_10px_5px_rgba(251,36,104,0.6)]"
+            : "bg-[#183934] border-2 border-[#1ED80F] !shadow-[0px_8px_0px_0px_rgba(30,216,15,0.68),inset_0_0_10px_5px_rgba(30,216,15,0.6)]"
+          : "",
         isGameover && !cell.isRevealed ? "!opacity-40 pointer-events-none" : "",
         gamePhase === "initial"
           ? `hover:cursor-default animate-pulse duration-[2s]`
@@ -248,6 +250,13 @@ export function MineButton({
             ? `${Math.min(id / idleAnimationVariant, 25)}s`
             : "0",
         backgroundColor,
+        boxShadow: rainbowMode
+          ? `0px 8px 0px 0px hsl(${hue}, ${saturation}%, ${lightness - 40}%)`
+          : isPressed
+            ? "0px 0px 0px 0px rgb(14,51,132)"
+            : "0px 8px 0px 0px rgb(14,51,132)",
+        translateY: isPressed ? "0.375rem" : "0rem",
+        animationDuration: "2s",
       }}
     >
       <motion.div

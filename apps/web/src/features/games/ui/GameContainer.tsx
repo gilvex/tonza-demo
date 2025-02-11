@@ -34,14 +34,18 @@ export function GameContainer() {
   };
 
   const [multipliers, setMultiplies] = useState(updateMultipliers(mines));
+  const [gamePhase, setGamePhase] = useState<GamePhase>("initial");
 
-  useEffect(() => setMultiplies(updateMultipliers(mines)), [mines]);
+  useEffect(() => {
+    if (!gamePhase.includes("result")) {
+      setMultiplies(updateMultipliers(mines));
+    }
+  }, [gamePhase, mines]);
   // Game phase controls which components (and button text) to show:
   // - "initial": show BetPanel (to enter bet/mines)
   // - "running": game is live and waiting for a cell selection
   // - "cashOut": a safe cell was hit; dynamic button now acts as cash-out trigger
   // - "bombed": a bomb was hit; game ends
-  const [gamePhase, setGamePhase] = useState<GamePhase>("initial");
 
   const handleMinesSelect = (minesCount: number) => {
     setMines(minesCount);
@@ -59,7 +63,7 @@ export function GameContainer() {
     setTimeout(() => {
       setGamePhase("initial");
     }, 2000);
-  }
+  };
 
   // Called by GamePanel when a safe cell (gem) is revealed.
   const handleGemClick = () => {
@@ -95,7 +99,7 @@ export function GameContainer() {
       const earned = betAmount * currentMultiplier;
       console.log("Earned amount:", earned, "TON");
       // Reset the game state (but keep the bet/mines values for reusing).
-      handleFinishGame("win")
+      handleFinishGame("win");
     }
   };
 

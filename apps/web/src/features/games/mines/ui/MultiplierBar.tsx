@@ -34,36 +34,7 @@ export default function MultiplierBar({
   currentMultiplier,
   multipliers,
 }: MultiplierBarProps) {
-
-  // useEffect(() => {
-  //   let interval: NodeJS.Timeout | null = null;
-  //   if (gameState === "active") {
-  //     // Use the mines count to determine how quickly the multiplier advances.
-  //     const intervalTime = 1000 / Math.max(mines, 1);
-  //     interval = setInterval(() => {
-  //       setActiveIndex((prev) => {
-  //         const nextIndex =
-  //           prev < defaultMultipliers.length - 1 ? prev + 1 : prev;
-  //         if (onMultiplierUpdate) {
-  //           onMultiplierUpdate(defaultMultipliers[nextIndex].factor);
-  //         }
-  //         return nextIndex;
-  //       });
-  //     }, intervalTime);
-  //   }
-  //   if (gameState === "idle") {
-  //     setActiveIndex(0);
-  //     if (onMultiplierUpdate) {
-  //       onMultiplierUpdate(defaultMultipliers[0].factor);
-  //     }
-  //   }
-  //   if (gameState === "bomb" && interval) {
-  //     clearInterval(interval);
-  //   }
-  //   return () => {
-  //     if (interval) clearInterval(interval);
-  //   };
-  // }, [gameState, mines, onMultiplierUpdate]);
+  console.log(multipliers, currentMultiplier, gamePhase);
 
   return (
     <div className="flex justify-center items-center max-w-[400px]">
@@ -71,7 +42,7 @@ export default function MultiplierBar({
         // In active mode, every box up to the current active index is forced blue.
         // In bomb state all boxes are forced red.
         let boxColor = multiplier;
-        if (gamePhase === "cashOut" && multiplier.factor <= currentMultiplier) {
+        if (["cashOut", "result:win"].includes(gamePhase) && multiplier.factor <= currentMultiplier) {
           boxColor = {
             ...multiplier,
             borderColor: "#1B62EB",
@@ -83,7 +54,7 @@ export default function MultiplierBar({
             multipliers[index+1].borderColor = "#1B62EB"
           }
         }
-        if (gamePhase === "bombed" && multiplier.factor <= currentMultiplier) {
+        if (["bombed", "result:lose"].includes(gamePhase) && multiplier.factor <= currentMultiplier) {
           boxColor = {
             ...multiplier,
             borderColor: "#FB2468",
