@@ -35,52 +35,61 @@ export default function MultiplierBar({
   multipliers,
 }: MultiplierBarProps) {
   return (
-    <div className="flex justify-center items-center w-full max-w-sm lg:max-w-xl">
-      {multipliers.map((multiplier, index) => {
-        // In active mode, every box up to the current active index is forced blue.
-        // In bomb state all boxes are forced red.
-        let boxColor = multiplier;
-        if (["cashOut", "result:win"].includes(gamePhase) && multiplier.factor <= currentMultiplier) {
-          boxColor = {
-            ...multiplier,
-            borderColor: "#1B62EB",
-            backgroundColor: "#1B62EB",
-            growColor: "#1B62EB",
-          };
+    <div className="w-full flex justify-center max-w-sm lg:max-w-xl">
+      <div className="flex items-center overflow-x-auto snap-x snap-mandatory">
+        {multipliers.map((multiplier, index) => {
+          // In active mode, every box up to the current active index is forced blue.
+          // In bomb state all boxes are forced red.
+          let boxColor = multiplier;
+          if (
+            ["cashOut", "result:win"].includes(gamePhase) &&
+            multiplier.factor <= currentMultiplier
+          ) {
+            boxColor = {
+              ...multiplier,
+              borderColor: "#1B62EB",
+              backgroundColor: "#1B62EB",
+              growColor: "#1B62EB",
+            };
 
-          if(index < multipliers.length - 1) {
-            multipliers[index+1].borderColor = "#1B62EB"
+            if (index < multipliers.length - 1) {
+              multipliers[index + 1].borderColor = "#1B62EB";
+            }
           }
-        }
-        if (["bombed", "result:lose"].includes(gamePhase) && multiplier.factor <= currentMultiplier) {
-          boxColor = {
-            ...multiplier,
-            borderColor: "#FB2468",
-            backgroundColor: "#FB2468",
-            growColor: "#FB2468",
-          };
+          if (
+            ["bombed", "result:lose"].includes(gamePhase) &&
+            multiplier.factor <= currentMultiplier
+          ) {
+            boxColor = {
+              ...multiplier,
+              borderColor: "#FB2468",
+              backgroundColor: "#FB2468",
+              growColor: "#FB2468",
+            };
 
-          
-          if(index < multipliers.length - 1) {
-            multipliers[index+1].borderColor = "#FB2468"
+            if (index < multipliers.length - 1) {
+              multipliers[index + 1].borderColor = "#FB2468";
+            }
           }
-        }
-        return (
-          <React.Fragment key={index}>
-            <MultiplierBox
-              value={boxColor.value}
-              borderColor={boxColor.borderColor}
-              backgroundColor={boxColor.backgroundColor}
-            />
-            {index < multipliers.length - 1 && (
-              <div
-                className="h-0.5 w-2"
-                style={{ backgroundColor: boxColor.growColor }}
-              />
-            )}
-          </React.Fragment>
-        );
-      })}
+          return (
+            <React.Fragment key={index}>
+            <div className="snap-start w-20 flex-shrink-0">
+              <MultiplierBox
+                  value={boxColor.value}
+                  borderColor={boxColor.borderColor}
+                  backgroundColor={boxColor.backgroundColor}
+                />
+            </div>
+              {index < multipliers.length - 1 && (
+                <div
+                  className="h-0.5 min-w-2"
+                  style={{ backgroundColor: boxColor.growColor }}
+                />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 }

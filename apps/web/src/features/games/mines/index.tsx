@@ -39,7 +39,8 @@ export function MineGame({
   const [isGameover, setGameover] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [idleAnimationVariant, setIAV] = useState(
-    Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
+    10
+    // Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
   );
 
   useEffect(() => {
@@ -205,16 +206,26 @@ export function MineButton({
     };
   }, [isPressed, isCancelled, onClick]);
 
-  const hue = (id / 25) * 360; // id 0 -> hue 0, id 25 -> hue 360
-  const saturation = 70; // keep saturation constant at 70%
+  // Calculate our base HSL values.
+  const saturation = 70;
   const lightness = 40 + (idleAnimationVariant / 25) * 30;
 
-  const rainbowMode = idleAnimationVariant == 10;
-  const backgroundColor = rainbowMode
-    ? `hsl(${hue}, ${saturation}%, ${lightness}%)`
-    : isPressed
-      ? "rgb(29 78 216 / var(--tw-bg-opacity, 1))"
-      : "";
+  // Determine if rainbow mode is active (e.g. when idleAnimationVariant equals 10)
+  const rainbowMode = idleAnimationVariant === 10;
+
+  // Use your original color when not in rainbow mode.
+  const staticBackgroundColor = isPressed
+    ? "rgb(29 78 216 / var(--tw-bg-opacity, 1))"
+    : "";
+
+  // When in rainbow mode, define a keyframe array of rainbow colors.
+  const colorsRange = Array.from({ length: 25 }, (_, i) => (i / 24) * 360);
+  const rainbowColors = colorsRange.map(
+    (hue) => `hsl(${hue}, ${saturation}%, ${lightness}%)`
+  );
+  const shadowColors = colorsRange.map(
+    (hue) => `0px 8px 0px 0px hsl(${hue}, ${saturation}%, ${lightness - 20}%)`
+  );
 
   return (
     <motion.button
@@ -244,18 +255,37 @@ export function MineButton({
           : ""
       )}
       animate={{
+        // Use your original animation delay for the entire button if needed.
         animationDelay:
           gamePhase === "initial"
             ? `${Math.min(id / idleAnimationVariant, 25)}s`
             : "0",
-        backgroundColor,
+        backgroundColor: rainbowMode ? rainbowColors : staticBackgroundColor,
         boxShadow: rainbowMode
-          ? `0px 8px 0px 0px hsl(${hue}, ${saturation}%, ${lightness - 40}%)`
+          ? shadowColors
           : isPressed
             ? "0px 0px 0px 0px rgb(14,51,132)"
             : "0px 8px 0px 0px rgb(14,51,132)",
         translateY: isPressed ? "0.375rem" : "0rem",
-        animationDuration: "2s",
+      }}
+      transition={{
+        backgroundColor: rainbowMode
+          ? {
+              duration: 4,
+              ease: "linear",
+              repeat: Infinity,
+              delay: id,
+            }
+          : { duration: 0.2 },
+        boxShadow: rainbowMode
+          ? {
+              duration: 4,
+              ease: "linear",
+              repeat: Infinity,
+              delay: id,
+            }
+          : { duration: 0.2 },
+        default: { duration: 0.2 },
       }}
     >
       <motion.div
@@ -296,13 +326,7 @@ export function MineButton({
         className="flex justify-center items-center"
       >
         <div
-          className={`${id + 1 && rainbowMode ? "" : "bg-blue-400"} rounded-full blur-lg min-w-10 min-h-10 absolute inset-0"`}
-          style={{
-            backgroundColor:
-              id + 1 && rainbowMode
-                ? `hsl(${hue}, ${saturation}%, ${lightness + 40}%)`
-                : "",
-          }}
+          className={`${id + 1 && rainbowMode ? "" : "bg-blue-400"} rounded-full blur-lg min-w-10 min-h-10 absolute inset-0`}
         />
       </motion.div>
     </motion.button>

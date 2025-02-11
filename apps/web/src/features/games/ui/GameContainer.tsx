@@ -13,7 +13,7 @@ export function GameContainer() {
 
   const updateMultipliers = (mines: number) => {
     // We'll allow up to 6 multiplier boxes (or fewer if there are very many mines)
-    const multiplierCount = Math.min(25 - mines, 6);
+    const multiplierCount = 25 - mines;
 
     // Define a risk factor that increases as the number of mines increases.
     // For example, if mines = 1 then riskFactor ≈ 25/24 ≈ 1.04;
@@ -118,7 +118,7 @@ export function GameContainer() {
   }, [gamePhase]);
 
   return (
-    <div className="flex flex-col items-center gap-4 lg:flex-row w-full lg:max-w-full lg:items-end h-full">
+    <div className="flex flex-col items-center gap-3 lg:flex-row w-full lg:max-w-full lg:items-end h-full">
       <GamePanel
         betAmount={betAmount}
         mines={mines}

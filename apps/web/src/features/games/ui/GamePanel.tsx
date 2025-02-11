@@ -39,7 +39,7 @@ export function GamePanel({
   return (
     <div
       className={cn(
-        "from-[#09122F] from-70% to-[#1b60eba2] bg-gradient-to-b w-full rounded-2xl p-4 flex flex-col gap-4",
+        "from-[#09122F] from-70% to-[#1b60eba2] bg-gradient-to-b w-full rounded-2xl p-4 flex flex-col gap-3",
         "transition-all text-[2.5vw] sm:text-base items-center h-full"
       )}
     >
