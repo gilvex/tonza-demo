@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "pnpm run --parallel dev",
     "dev:https": "pnpm run --parallel dev:https",
+    "build": "pnpm run --parallel build",
+    "start": "pnpm run --parallel start",
     "lint": "pnpm run --parallel lint"
   },
   "keywords": [],

@@ -25,7 +25,7 @@ export function init(debug: boolean): void {
     backButton.mount();
   }
 
-  void miniApp.mount()
+  void miniApp.mount().catch(console.warn);
   // .then(() => {
   //   miniApp.bindCssVars();
   // });

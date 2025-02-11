@@ -1,4 +1,8 @@
-import { miniApp, setMiniAppBackgroundColor, setMiniAppHeaderColor } from "@telegram-apps/sdk-react";
+import {
+  miniApp,
+  setMiniAppBackgroundColor,
+  setMiniAppHeaderColor,
+} from "@telegram-apps/sdk-react";
 import { getComputedHSL } from "@web/shared/color";
 import { useEffect, useState } from "react";
 
@@ -10,10 +14,22 @@ export function MiniAppBackground() {
   );
 
   useEffect(() => {
-    if (isMounted && isAvailable) {
-      setMiniAppBackgroundColor(backgroundColor as `#${string}`);
-      setMiniAppHeaderColor(backgroundColor as `#${string}`);
-    }
+    const setBg = (async (retryCount: number) => {
+      if(retryCount > 10) return;
+
+      if (!isMounted || !isAvailable) {
+        await miniApp.mount().catch(console.warn);
+      }
+      console.log("TWA MA SET:", backgroundColor, getComputedHSL("--background"));
+      try {
+        setMiniAppBackgroundColor(backgroundColor as `#${string}`);
+        setMiniAppHeaderColor(backgroundColor as `#${string}`);
+      } catch {
+        setTimeout(() => setBg(retryCount+1), 200);
+      }
+    });
+
+    void setBg(0);
   }, [isMounted, isAvailable, backgroundColor]);
 
   useEffect(() => {
