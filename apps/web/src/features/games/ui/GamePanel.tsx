@@ -3,14 +3,15 @@
 import React from "react";
 import MultiplierBar from "../mines/ui/MultiplierBar";
 import { MineGame } from "../mines";
-import { cn } from "@web/lib/utils";
 import { GamePhase, Multiplier } from "../mines/lib/types";
+
+import "./GamePanel.styles.css"
 
 interface GamePanelProps {
   mines: number;
-  gamePhase: GamePhase,
+  gamePhase: GamePhase;
   setGamePhase: (gamePhase: GamePhase) => void;
-  multipliers: Multiplier[]
+  multipliers: Multiplier[];
   betAmount: number;
   currentMultiplier: number;
   onGemClick: () => void;
@@ -37,12 +38,7 @@ export function GamePanel({
   };
 
   return (
-    <div
-      className={cn(
-        "from-[#09122F] from-70% to-[#1b60eba2] bg-gradient-to-b w-full rounded-2xl p-4 flex flex-col gap-3",
-        "transition-all text-[2.5vw] sm:text-base items-center h-full"
-      )}
-    >
+    <div className="game-panel">
       <MultiplierBar
         multipliers={multipliers}
         gamePhase={gamePhase}

@@ -80,7 +80,7 @@ export function BetPanel({
   );
 
   return (
-    <div className="bg-[#09122F] py-3 px-5 rounded-2xl w-full flex flex-col gap-3 lg:max-w-full lg:h-full">
+    <div className="bg-[#09122F] py-3 px-5 rounded-2xl w-full h-full max-h-[35%] lg:max-h-full flex flex-col gap-2 lg:max-w-full">
       {/* Bet Amount Section */}
       <div className="flex flex-col gap-1.5">
         <p className="text-[#9EA8DD]">Bet Amount:</p>
@@ -146,7 +146,7 @@ export function BetPanel({
       <div className="grow flex justify-center items-end w-full">
         <Button
           className={cn(
-            "from-[#85DAFF] to-60% font-bold to-[#5991FE] bg-gradient-to-br hover:bg-[#161f4b] w-full",
+            "from-[#85DAFF] to-60% font-bold to-[#5991FE] bg-gradient-to-br hover:bg-[#161f4b] w-full lg:h-16 lg:text-xl",
             gamePhase === "running" &&
               "bg-[#1B265C] text-white hover:bg-[#161f4b]",
             (gamePhase === "cashOut" || gamePhase === "result:win") &&

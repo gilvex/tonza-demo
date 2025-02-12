@@ -118,7 +118,7 @@ export function GameContainer() {
   }, [gamePhase]);
 
   return (
-    <div className="flex flex-col items-center gap-3 lg:flex-row w-full lg:max-w-full lg:items-end h-full">
+    <div className="flex flex-col items-center gap-3 pb-3 lg:flex-row w-full lg:max-w-full lg:items-end h-full">
       <GamePanel
         betAmount={betAmount}
         mines={mines}

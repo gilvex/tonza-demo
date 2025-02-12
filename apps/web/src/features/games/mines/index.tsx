@@ -39,8 +39,7 @@ export function MineGame({
   const [isGameover, setGameover] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [idleAnimationVariant, setIAV] = useState(
-    10
-    // Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
+    Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
   );
 
   useEffect(() => {
@@ -219,7 +218,10 @@ export function MineButton({
     : "";
 
   // When in rainbow mode, define a keyframe array of rainbow colors.
-  const colorsRange = Array.from({ length: 25 }, (_, i) => ((i / 24) * 360 + 213) % 360);
+  const colorsRange = Array.from(
+    { length: 25 },
+    (_, i) => ((i / 24) * 360 + 213) % 360
+  );
   const rainbowColors = colorsRange.map(
     (hue) => `hsl(${hue}, ${saturation}%, ${lightness}%)`
   );
