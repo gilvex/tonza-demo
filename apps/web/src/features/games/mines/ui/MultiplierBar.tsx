@@ -39,7 +39,7 @@ export default function MultiplierBar({
     <div className="w-full flex justify-center max-w-sm lg:max-w-xl">
       <div
         ref={containerRef}
-        className="flex items-center overflow-x-auto snap-x snap-mandatory"
+        className="flex items-center overflow-hidden snap-x snap-mandatory"
       >
         {multipliers.map((multiplier, index) => {
           let boxColor = multiplier;

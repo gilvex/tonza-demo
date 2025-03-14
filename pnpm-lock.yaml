@@ -229,15 +229,6 @@ importers:
         specifier: ^6.2.1
         version: 6.2.1
 
-  packages/prisma:
-    dependencies:
-      '@prisma/client':
-        specifier: 6.2.1
-        version: 6.2.1(prisma@6.2.1)
-      prisma:
-        specifier: ^6.2.1
-        version: 6.2.1
-
 packages:
 
   '@aduh95/viz.js@3.4.0':

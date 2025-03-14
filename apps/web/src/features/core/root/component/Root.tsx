@@ -1,6 +1,6 @@
 "use client";
 
-import { type PropsWithChildren } from "react";
+import { Suspense, type PropsWithChildren } from "react";
 import {
   miniApp,
   retrieveLaunchParams,
@@ -19,6 +19,7 @@ import { init } from "../lib";
 import { TonConnectUIProvider } from "@web/features/ton-connect/ui";
 import { ThemeProvider } from "./ThemeProvider";
 import { MiniAppBackground } from "./MiniAppBackground";
+import Image from "next/image";
 
 function RootInner({ children }: PropsWithChildren) {
   const isDev = process.env.NODE_ENV === "development";
@@ -46,25 +47,42 @@ function RootInner({ children }: PropsWithChildren) {
   //   }, [initDataUser]);
 
   return (
-    <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="dark"
-        enableSystem
-        disableTransitionOnChange
-      >
-        <AppRoot
-          appearance={isDark ? "dark" : "light"}
-          platform={
-            ["macos", "ios"].includes(lp.tgWebAppPlatform) ? "ios" : "base"
-          }
-          className="h-full"
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-8 items-center justify-center h-screen text-white px-4 user-select-none">
+          <div className="relative">
+            <Image
+              className="h-auto max-w-[180px] user-select-none animate-pulse"
+              src="/logo.svg"
+              draggable="false"
+              alt="Tonza Logo"
+              width={180}
+              height={180}
+            />
+          </div>
+        </div>
+      }
+    >
+      <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
         >
-          <MiniAppBackground />
-          {children}
-        </AppRoot>
-      </ThemeProvider>
-    </TonConnectUIProvider>
+          <AppRoot
+            appearance={isDark ? "dark" : "light"}
+            platform={
+              ["macos", "ios"].includes(lp.tgWebAppPlatform) ? "ios" : "base"
+            }
+            className="h-full"
+          >
+            <MiniAppBackground />
+            {children}
+          </AppRoot>
+        </ThemeProvider>
+      </TonConnectUIProvider>
+    </Suspense>
   );
 }
 
