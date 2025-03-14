@@ -8,9 +8,13 @@
     "dev:https": "pnpm run --parallel dev:https",
     "build": "pnpm run --parallel build",
     "start": "pnpm run --parallel start",
-    "lint": "pnpm run --parallel lint"
+    "lint": "pnpm run --parallel lint",
+    "pm2:start": "pm2 start pm2.config.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "pm2": "^5.4.3"
+  }
 }
