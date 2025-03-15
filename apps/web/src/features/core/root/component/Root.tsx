@@ -20,6 +20,7 @@ import { TonConnectUIProvider } from "@web/features/ton-connect/ui";
 import { ThemeProvider } from "./ThemeProvider";
 import { MiniAppBackground } from "./MiniAppBackground";
 import Image from "next/image";
+import { Context } from "./Context";
 
 function RootInner({ children }: PropsWithChildren) {
   const isDev = process.env.NODE_ENV === "development";
@@ -78,7 +79,7 @@ function RootInner({ children }: PropsWithChildren) {
             className="h-full"
           >
             <MiniAppBackground />
-            {children}
+            <Context>{children}</Context>
           </AppRoot>
         </ThemeProvider>
       </TonConnectUIProvider>

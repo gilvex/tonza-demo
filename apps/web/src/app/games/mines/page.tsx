@@ -1,12 +1,5 @@
-import { Button } from "@web/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import GamePage from "@web/pages/GamePage";
 
-export default function Page() {
-    return <div className="px-4">
-        <div id="nav">
-            <Button variant="secondary" size="icon" className="rounded-full">
-                <ArrowLeft />
-            </Button>
-        </div>
-    </div>
+export default async function Page() {
+  return <GamePage />;
 }

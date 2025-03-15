@@ -2,10 +2,12 @@ import React from "react";
 import Image from "next/image";
 import { Button } from "@web/components/ui/button";
 import { ArrowLeft, ChevronDown, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
 export interface NavigationBarProps {
   balance: number; // e.g. 1293.02
-  onBack: () => void;
+  onBack?: (router: AppRouterInstance) => void;
   onAddFunds: () => void;
 }
 
@@ -14,6 +16,7 @@ export function NavigationBar({
   onBack,
   onAddFunds,
 }: NavigationBarProps) {
+  const router = useRouter();
   // Split integer and fractional parts for styling (adjust as needed)
   const integerPart = Math.floor(balance);
   const fractionalPart = (balance % 1).toFixed(2).substring(2);
@@ -24,7 +27,7 @@ export function NavigationBar({
         className="rounded-full size-10 max-w-36 max-h-36"
         size="icon"
         variant="secondary"
-        onClick={onBack}
+        onClick={() => onBack ? onBack(router) : router.back}
       >
         <ArrowLeft />
       </Button>
