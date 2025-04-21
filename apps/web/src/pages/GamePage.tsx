@@ -1,7 +1,7 @@
 "use client";
 
 import { GameContainer } from "@web/features/games/ui/GameContainer";
-import { NavigationBar } from "@web/features/navigation/ui/NavigationBar";
+import { NavigationBar } from "@web/components/navigation/ui/NavigationBar";
 
 export default function GamePage() {
   return (

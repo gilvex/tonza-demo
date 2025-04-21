@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "San Francisco";
+  font-weight: 400;
+  src: url("https://applesocial.s3.amazonaws.com/assets/styles/fonts/sanfrancisco/sanfranciscodisplay-regular-webfont.woff");
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -69,11 +80,40 @@ body {
   body {
     @apply bg-background text-foreground;
     height: 100%;
+    touch-action: manipulation;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 auto;
+    width: 100%;
   }
 
   input[type="number"]::-webkit-inner-spin-button,
   input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
+  }
+
+  :root {
+    width: 100%;
+    font-family:
+      "San Francisco",
+      Inter,
+      system-ui,
+      Avenir,
+      Helvetica,
+      Arial,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Helvetica Neue",
+      "Lucida Grande",
+      sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    background-color: #01021e;
+    color: #ffffff;
+    color-scheme: var(--tg-color-scheme);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }

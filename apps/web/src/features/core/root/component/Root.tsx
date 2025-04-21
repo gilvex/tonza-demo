@@ -77,6 +77,7 @@ function RootInner({ children }: PropsWithChildren) {
               ["macos", "ios"].includes(lp.tgWebAppPlatform) ? "ios" : "base"
             }
             className="h-full"
+            data-vaul-drawer-wrapper=""
           >
             <MiniAppBackground />
             <Context>{children}</Context>

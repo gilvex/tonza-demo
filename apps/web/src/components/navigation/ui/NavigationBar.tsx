@@ -4,6 +4,7 @@ import { Button } from "@web/components/ui/button";
 import { ArrowLeft, ChevronDown, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import WalletModal from "@web/features/wallet/ui/WalletDrawer";
 
 export interface NavigationBarProps {
   balance: number; // e.g. 1293.02
@@ -11,11 +12,7 @@ export interface NavigationBarProps {
   onAddFunds: () => void;
 }
 
-export function NavigationBar({
-  balance,
-  onBack,
-  onAddFunds,
-}: NavigationBarProps) {
+export function NavigationBar({ balance, onBack }: NavigationBarProps) {
   const router = useRouter();
   // Split integer and fractional parts for styling (adjust as needed)
   const integerPart = Math.floor(balance);
@@ -27,7 +24,7 @@ export function NavigationBar({
         className="rounded-full size-10 max-w-36 max-h-36"
         size="icon"
         variant="secondary"
-        onClick={() => onBack ? onBack(router) : router.back}
+        onClick={() => (onBack ? onBack(router) : router.push('/'))}
       >
         <ArrowLeft />
       </Button>
@@ -46,13 +43,14 @@ export function NavigationBar({
           <ChevronDown className="text-[#858CAB]" />
         </div>
         <div className="grow flex justify-end">
-          <Button
-            size="icon"
-            className="rounded-full from-[#24ACFB] to-[#078CEA] bg-gradient-to-b max-w-8 max-h-8"
-            onClick={onAddFunds}
-          >
-            <Plus className="text-white min-w-6 min-h-6" />
-          </Button>
+          <WalletModal>
+            <Button
+              size="icon"
+              className="rounded-full from-[#24ACFB] to-[#078CEA] bg-gradient-to-b max-w-8 max-h-8"
+            >
+              <Plus className="text-white min-w-6 min-h-6" />
+            </Button>
+          </WalletModal>
         </div>
       </div>
     </div>
