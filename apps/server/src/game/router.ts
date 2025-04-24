@@ -1,43 +1,106 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Inject } from '@nestjs/common';
 import {
-  Router,
+  Router as TRPCRouter,
   Query,
+  Mutation,
   UseMiddlewares,
   Input,
-  Ctx,
-  Options,
-  ProcedureOptions,
 } from 'nestjs-trpc';
 import { Service } from './service';
 import { ProtectedMiddleware } from '@server/protected.middleware';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { xSchema } from './schema';
+import {
+  generateMinesInputSchema,
+  generateMinesOutputSchema,
+  resumeSessionInputSchema,
+  resumeSessionOutputSchema,
+} from './schema';
 
-@Router({ alias: 'users' })
-export class UserRouter {
+@TRPCRouter({ alias: 'game' })
+export class Router {
   constructor(@Inject(Service) private readonly service: Service) {}
 
-  @Query({
-    input: z.object({ userId: z.string() }),
-    output: xSchema,
+  @Mutation({
+    input: generateMinesInputSchema,
+    output: generateMinesOutputSchema,
   })
   @UseMiddlewares(ProtectedMiddleware)
-  async getUserById(
-    @Input('userId') userId: string,
-    @Ctx() ctx: object,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    @Options() opts: ProcedureOptions,
+  async generateMines(
+    @Input() input: z.infer<typeof generateMinesInputSchema>,
   ) {
-    const x = await this.service.getX(userId);
-    // console.log(ctx);
-    if (!ctx) {
+    try {
+      return await this.service.generateMines(input);
+    } catch (e) {
+      console.error('Error generating mines:', e);
       throw new TRPCError({
-        message: 'Could not find x.',
-        code: 'NOT_FOUND',
+        message: 'Failed to generate mines',
+        code: 'INTERNAL_SERVER_ERROR',
       });
     }
+  }
 
-    return x;
+  @Query({
+    input: resumeSessionInputSchema,
+    output: resumeSessionOutputSchema,
+  })
+  @UseMiddlewares(ProtectedMiddleware)
+  async resumeSession(
+    @Input() input: z.infer<typeof resumeSessionInputSchema>,
+  ) {
+    try {
+      return await this.service.resumeSession(input.userId);
+    } catch (e) {
+      throw new TRPCError({ message: 'Session not found', code: 'NOT_FOUND' });
+    }
+  }
+
+  @Mutation({
+    input: z.object({
+      userId: z.string(),
+      row: z.number(),
+      col: z.number(),
+    }),
+    output: z.object({
+      sessionId: z.number(),
+      grid: z.array(z.array(z.string())),
+      status: z.string(),
+    }),
+  })
+  @UseMiddlewares(ProtectedMiddleware)
+  async revealCell(
+    @Input() input: { userId: string; row: number; col: number },
+  ) {
+    try {
+      return await this.service.revealCell(input.userId, input.row, input.col);
+    } catch (e) {
+      throw new TRPCError({
+        message: e.message || 'Failed to reveal cell',
+        code: 'INTERNAL_SERVER_ERROR',
+      });
+    }
+  }
+
+  @Mutation({
+    input: z.object({ userId: z.string() }),
+    output: z.object({
+      sessionId: z.number(),
+      grid: z.array(z.array(z.string())),
+      status: z.string(),
+    }),
+  })
+  @UseMiddlewares(ProtectedMiddleware)
+  async takeOut(@Input() input: { userId: string }) {
+    try {
+      return await this.service.takeOut(input.userId);
+    } catch (e) {
+      throw new TRPCError({
+        message: e.message || 'Failed to take out',
+        code: 'INTERNAL_SERVER_ERROR',
+      });
+    }
   }
 }

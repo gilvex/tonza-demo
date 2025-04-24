@@ -5,6 +5,8 @@ import { cn } from "@web/lib/utils";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { GamePhase } from "./lib/types";
+import { useTRPCClient } from "@web/shared/trpc/client";
+import { convertServerGrid } from "./lib/helper";
 
 export interface Cell {
   isBomb: boolean;
@@ -13,31 +15,35 @@ export interface Cell {
 }
 
 export interface MineGameProps {
+  grid: Cell[];
+  setGrid: (grid: Cell[]) => void;
   mines: number;
   betAmount: number;
   currentMultiplier: number;
   gamePhase: GamePhase;
+  userId: string;
   onGameStart?: () => void;
   onBombHit?: () => void;
   onGemClick?: () => void;
 }
 
 export function MineGame({
+  grid,
+  setGrid,
   mines,
   betAmount,
   currentMultiplier,
   gamePhase,
+  userId,
   onGameStart,
   onBombHit,
   onGemClick,
 }: MineGameProps) {
   const gridSize = 5; // 5x5 grid
-  const totalCells = gridSize * gridSize;
-  const bombCount = mines; // Number of bombs
-
-  const [grid, setGrid] = useState<Cell[]>([]);
   const [isGameover, setGameover] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const api = useTRPCClient();
   const [idleAnimationVariant, setIAV] = useState(
     Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
   );
@@ -45,46 +51,72 @@ export function MineGame({
   useEffect(() => {
     if (gamePhase === "initial") {
       setGameover(false);
+      setSessionId(null);
     }
 
     if (gamePhase !== "running") return;
 
-    const newGrid: Cell[] = Array.from({ length: totalCells }, () => ({
-      isBomb: false,
-      isRevealed: false,
-      isGem: false,
-    }));
-    let bombsPlaced = 0;
-    while (bombsPlaced < bombCount) {
-      const randomIndex = Math.floor(Math.random() * totalCells);
-      if (!newGrid[randomIndex].isBomb) {
-        newGrid[randomIndex].isBomb = true;
-        bombsPlaced++;
-      }
-    }
-    newGrid.forEach((cell) => {
-      if (!cell.isBomb) cell.isGem = true;
+    // Initialize game with server
+    api.game.generateMines.mutate({
+      userId,
+      rows: gridSize,
+      cols: gridSize,
+      mines,
+      backspin: false
+    }).then(result => {
+      setSessionId(result.sessionId);
+      setGrid(convertServerGrid(result.grid));
     });
-    setGrid(newGrid);
-  }, [bombCount, totalCells, gamePhase]);
+  }, [gamePhase, mines, userId, gridSize, api.game.generateMines]);
 
-  const handleCellClick = (index: number) => {
-    if (isGameover) return;
+  const handleCellClick = async (index: number) => {
+    if (isGameover || !sessionId) return;
     if (!hasStarted) {
       setHasStarted(true);
       onGameStart && onGameStart();
     }
-    const updatedGrid = [...grid];
-    const cell = updatedGrid[index];
-    if (cell.isRevealed) return;
-    cell.isRevealed = true;
-    if (cell.isBomb) {
-      setGameover(true);
-      onBombHit && onBombHit();
-    } else {
-      onGemClick && onGemClick();
+
+    // Convert index to row/col
+    const row = Math.floor(index / gridSize);
+    const col = index % gridSize;
+
+    try {
+      const result = await api.game.revealCell.mutate({
+        userId,
+        row,
+        col
+      });
+
+      setGrid(convertServerGrid(result.grid));
+
+      if (result.status === 'failure') {
+        setGameover(true);
+        onBombHit && onBombHit();
+      } else {
+        onGemClick && onGemClick();
+      }
+
+      if (result.status === 'fullwin') {
+        // Handle win condition
+        setGameover(true);
+      }
+    } catch (error) {
+      console.error('Error revealing cell:', error);
     }
-    setGrid(updatedGrid);
+  };
+
+  // Handle take out action
+  const handleTakeOut = async () => {
+    if (!sessionId) return;
+    try {
+      const result = await api.game.takeOut.mutate({ userId });
+      console.log("Take out result:", result);
+      setGrid(convertServerGrid(result.grid));
+      setGameover(true);
+      onGemClick && onGemClick();
+    } catch (error) {
+      console.error('Error taking out:', error);
+    }
   };
 
   useEffect(() => {
@@ -130,6 +162,15 @@ export function MineGame({
                 onClick={() => handleCellClick(index)}
               />
             ))}
+
+        {/* {gamePhase === "running" && !isGameover && hasStarted && (
+          <button
+            onClick={handleTakeOut}
+            className="absolute -bottom-16 left-1/2 -translate-x-1/2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg"
+          >
+            Take Out
+          </button>
+        )} */}
 
         <AnimatePresence>
           {gamePhase.includes("result") && (

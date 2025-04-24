@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 import {
   MiddlewareOptions,
@@ -21,9 +23,11 @@ export class ProtectedMiddleware implements TRPCMiddleware {
 
     const durationMs = Date.now() - start;
     const meta = { path: opts.path, type: opts.type, durationMs };
-    result.ok
-      ? console.log('OK request timing:', meta)
-      : console.error('Non-OK request timing', meta);
+    if (result.ok) {
+      console.log('OK request timing:', meta);
+    } else {
+      console.error('Non-OK request timing:', meta, 'Error:', result.error);
+    }
     return result;
   }
 }

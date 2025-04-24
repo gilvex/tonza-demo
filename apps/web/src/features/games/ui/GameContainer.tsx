@@ -4,12 +4,17 @@ import React, { useEffect, useState } from "react";
 import { BetPanel } from "../mines/ui/BetPanel";
 import { GamePanel } from "./GamePanel";
 import { GamePhase } from "../mines/lib/types";
+import { useTRPCClient } from "@web/shared/trpc/client";
+import { Cell } from "../mines";
+import { convertServerGrid } from "../mines/lib/helper";
 
 export function GameContainer() {
+  const api = useTRPCClient();
   // These states will persist even after a game is finished.
   const [betAmount, setBetAmount] = useState<number>(10);
   const [mines, setMines] = useState<number>(1);
   const [currentMultiplier, setCurrentMultiplier] = useState<number>(0);
+  const [grid, setGrid] = useState<Cell[]>([]);
 
   const updateMultipliers = (mines: number) => {
     // We'll allow up to 6 multiplier boxes (or fewer if there are very many mines)
@@ -94,12 +99,20 @@ export function GameContainer() {
   // This dynamic action button is separate from BetPanel.
   // In "running" phase it shows "Select the cell" (and does nothing on click).
   // In "cashOut" phase it acts as the cash-out trigger.
-  const handleCashOut = () => {
+  const handleCashOut = async () => {
     if (gamePhase === "cashOut") {
       const earned = betAmount * currentMultiplier;
       console.log("Earned amount:", earned, "TON");
       // Reset the game state (but keep the bet/mines values for reusing).
-      handleFinishGame("win");
+      try {
+        const result = await api.game.takeOut.mutate({ userId: "1" });
+        console.log("Take out result:", result);
+        setGrid(convertServerGrid(result.grid));
+        // setGameover(true);
+        handleFinishGame("win");
+      } catch (error) {
+        console.error('Error taking out:', error);
+      }
     }
   };
 
@@ -120,6 +133,8 @@ export function GameContainer() {
   return (
     <div className="flex flex-col items-center gap-3 pb-3 lg:flex-row w-full lg:max-w-full lg:items-end h-full">
       <GamePanel
+        grid={grid}
+        setGrid={setGrid}
         betAmount={betAmount}
         mines={mines}
         multipliers={multipliers}

@@ -7,3 +7,35 @@ export const xSchema = z.object({
 });
 
 export type X = z.infer<typeof xSchema>;
+
+export const generateMinesInputSchema = z.object({
+  userId: z.string(),
+  rows: z.number().min(1),
+  cols: z.number().min(1),
+  mines: z.number().min(1),
+  backspin: z.boolean().optional(),
+});
+
+export const generateMinesOutputSchema = z.object({
+  sessionId: z.number(),
+  grid: z.array(
+    z.array(
+      z.union([z.literal('bomb'), z.literal('success'), z.literal('hidden')]),
+    ),
+  ),
+  status: z.string(),
+});
+
+export const resumeSessionInputSchema = z.object({
+  userId: z.string(),
+});
+
+export const resumeSessionOutputSchema = z.object({
+  sessionId: z.number(),
+  grid: z.array(
+    z.array(
+      z.union([z.literal('bomb'), z.literal('success'), z.literal('hidden')]),
+    ),
+  ),
+  status: z.string(),
+});

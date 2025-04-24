@@ -5,6 +5,8 @@ import { UserService } from './user.service';
 import { ProtectedMiddleware } from './protected.middleware';
 import { AppContext } from './app.context';
 import { TrpcPanelController } from './trpc-panel.controller';
+import { GameModule } from './game/module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { TrpcPanelController } from './trpc-panel.controller';
         process.env.NODE_ENV === 'production' ? undefined : './src/@generated',
       context: AppContext,
     }),
+    ConfigModule.forRoot(),
+    GameModule,
   ],
   controllers: [TrpcPanelController],
   providers: [UserRouter, AppContext, UserService, ProtectedMiddleware],

@@ -2,12 +2,14 @@
 
 import React from "react";
 import MultiplierBar from "../mines/ui/MultiplierBar";
-import { MineGame } from "../mines";
+import { Cell, MineGame } from "../mines";
 import { GamePhase, Multiplier } from "../mines/lib/types";
 
 import "./GamePanel.styles.css"
 
 interface GamePanelProps {
+  grid: Cell[];
+  setGrid: React.Dispatch<React.SetStateAction<Cell[]>>;
   mines: number;
   gamePhase: GamePhase;
   setGamePhase: (gamePhase: GamePhase) => void;
@@ -19,6 +21,8 @@ interface GamePanelProps {
 }
 
 export function GamePanel({
+  grid,
+  setGrid,
   mines,
   multipliers,
   betAmount,
@@ -45,6 +49,9 @@ export function GamePanel({
         currentMultiplier={currentMultiplier}
       />
       <MineGame
+        grid={grid}
+        setGrid={setGrid}
+        userId="1"
         mines={mines}
         betAmount={betAmount}
         currentMultiplier={currentMultiplier}
