@@ -6,6 +6,7 @@ import { Cell, MineGame } from "../mines";
 import { GamePhase, Multiplier } from "../mines/lib/types";
 
 import "./GamePanel.styles.css"
+import dynamic from "next/dynamic";
 
 interface GamePanelProps {
   grid: Cell[];
@@ -19,8 +20,15 @@ interface GamePanelProps {
   onGemClick: () => void;
   onBombHit: () => void;
 }
+const DynamicGamePanel = dynamic(() => Promise.resolve(GamePanelInner), {
+  ssr: false
+});
 
-export function GamePanel({
+export function GamePanel(props: GamePanelProps) {
+  return <DynamicGamePanel {...props} />;
+}
+
+function GamePanelInner({
   grid,
   setGrid,
   mines,

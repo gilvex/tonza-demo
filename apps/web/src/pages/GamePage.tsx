@@ -3,6 +3,8 @@
 import { GameContainer } from "@web/features/games/ui/GameContainer";
 import { NavigationBar } from "@web/components/navigation/ui/NavigationBar";
 
+export const dynamic = 'force-dynamic';
+
 export default function GamePage() {
   return (
     <div className="px-4 flex flex-col gap-4 items-center h-screen">

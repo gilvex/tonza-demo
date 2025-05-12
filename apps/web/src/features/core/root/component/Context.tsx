@@ -38,7 +38,7 @@ export function Context({ children }: { children: ReactNode }) {
     createTRPCClient<AppRouter>({
       links: [
         httpBatchLink({
-          url: process.env.NEXT_PUBLIC_TRPC_API_DOMAIN!,
+          url: "https://tonza.dingir.xyz/api/trpc",
         }),
       ],
     })

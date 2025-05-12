@@ -1,15 +1,28 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
+import dynamic from "next/dynamic";
 import React, { useEffect, useState } from "react";
 import { BetPanel } from "../mines/ui/BetPanel";
-import { GamePanel } from "./GamePanel";
 import { GamePhase } from "../mines/lib/types";
-import { useTRPCClient } from "@web/shared/trpc/client";
 import { Cell } from "../mines";
 import { convertServerGrid } from "../mines/lib/helper";
+import { useMutation } from "@tanstack/react-query";
+import { useTRPC } from "@web/shared/trpc/client";
+import { GamePanel } from "./GamePanel";
+
+// Dynamically import components that use TRPC to ensure they only load on client
+const DynamicGameContainer = dynamic(() => Promise.resolve(GameContainerInner), {
+  ssr: false
+});
 
 export function GameContainer() {
-  const api = useTRPCClient();
+  return <DynamicGameContainer />;
+}
+
+function GameContainerInner() {
+  const api = useTRPC();
+  const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
   const [betAmount, setBetAmount] = useState<number>(10);
   const [mines, setMines] = useState<number>(1);
@@ -105,7 +118,7 @@ export function GameContainer() {
       console.log("Earned amount:", earned, "TON");
       // Reset the game state (but keep the bet/mines values for reusing).
       try {
-        const result = await api.game.takeOut.mutate({ userId: "1" });
+        const result = await mutateAsync({ userId: "1" });
         console.log("Take out result:", result);
         setGrid(convertServerGrid(result.grid));
         // setGameover(true);

@@ -1,12 +1,14 @@
-/* eslint-disable @typescript-eslint/no-unused-expressions */
 "use client";
+
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import { useState, useEffect } from "react";
 import { cn } from "@web/lib/utils";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
 import { GamePhase } from "./lib/types";
-import { useTRPCClient } from "@web/shared/trpc/client";
+import { useTRPC } from "@web/shared/trpc/client";
 import { convertServerGrid } from "./lib/helper";
+import { useMutation } from "@tanstack/react-query";
 
 export interface Cell {
   isBomb: boolean;
@@ -43,7 +45,10 @@ export function MineGame({
   const [isGameover, setGameover] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [sessionId, setSessionId] = useState<number | null>(null);
-  const api = useTRPCClient();
+  const api = useTRPC();
+  const { mutateAsync: revealCell } = useMutation(api.game.revealCell.mutationOptions());
+  const { mutateAsync: generateMines } = useMutation(api.game.generateMines.mutationOptions());
+  
   const [idleAnimationVariant, setIAV] = useState(
     Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
   );
@@ -57,7 +62,7 @@ export function MineGame({
     if (gamePhase !== "running") return;
 
     // Initialize game with server
-    api.game.generateMines.mutate({
+    generateMines({
       userId,
       rows: gridSize,
       cols: gridSize,
@@ -67,7 +72,7 @@ export function MineGame({
       setSessionId(result.sessionId);
       setGrid(convertServerGrid(result.grid));
     });
-  }, [gamePhase, mines, userId, gridSize, api.game.generateMines]);
+  }, [gamePhase, generateMines, mines, setGrid, userId]);
 
   const handleCellClick = async (index: number) => {
     if (isGameover || !sessionId) return;
@@ -81,7 +86,7 @@ export function MineGame({
     const col = index % gridSize;
 
     try {
-      const result = await api.game.revealCell.mutate({
+      const result = await revealCell({
         userId,
         row,
         col
@@ -102,20 +107,6 @@ export function MineGame({
       }
     } catch (error) {
       console.error('Error revealing cell:', error);
-    }
-  };
-
-  // Handle take out action
-  const handleTakeOut = async () => {
-    if (!sessionId) return;
-    try {
-      const result = await api.game.takeOut.mutate({ userId });
-      console.log("Take out result:", result);
-      setGrid(convertServerGrid(result.grid));
-      setGameover(true);
-      onGemClick && onGemClick();
-    } catch (error) {
-      console.error('Error taking out:', error);
     }
   };
 
