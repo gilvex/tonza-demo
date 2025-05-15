@@ -11,11 +11,12 @@ import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@web/shared/trpc/client";
 import { GamePanel } from "./GamePanel";
 
-interface GameContainerProps {
+export interface GameContainerProps {
   mode?: 'demo' | 'real';
   session?: string | null;
   currency?: string | null;
   lang?: string | null;
+  userBalance?: number;
 }
 
 // Dynamically import components that use TRPC to ensure they only load on client
@@ -23,11 +24,17 @@ const DynamicGameContainer = dynamic(() => Promise.resolve(GameContainerInner), 
   ssr: false
 });
 
-export function GameContainer(props: GameContainerProps) {
-  return <DynamicGameContainer {...props} />;
+export function GameContainer({
+  mode = 'demo',
+  session,
+  currency = 'USD',
+  lang = 'en',
+  userBalance = 0
+}: GameContainerProps) {
+  return <DynamicGameContainer {...{ mode, session, currency, lang, userBalance }} />;
 }
 
-function GameContainerInner({ mode = 'demo', session, currency, lang }: GameContainerProps) {
+function GameContainerInner({ mode = 'demo', session, currency, lang, userBalance }: GameContainerProps) {
   const api = useTRPC();
   const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
@@ -179,6 +186,7 @@ function GameContainerInner({ mode = 'demo', session, currency, lang }: GameCont
         handleMinesSelect={handleMinesSelect}
         handleCashOut={handleCashOut}
         currency={currency}
+        userBalance={userBalance}
       />
     </div>
   );

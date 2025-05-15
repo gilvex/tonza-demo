@@ -18,6 +18,7 @@ export interface BetPanelProps {
   handleMinesSelect: (mines: number) => void;
   handleCashOut: () => void;
   currency?: string | null;
+  userBalance?: number;
 }
 
 export function BetPanel({
@@ -28,16 +29,17 @@ export function BetPanel({
   onPlaceBet,
   handleMinesSelect,
   handleCashOut,
-  currency = 'USD'
+  currency = 'USD',
+  userBalance = 0
 }: BetPanelProps) {
   
   const [betAmount, setBetAmount] = useState<number>(initialBet);
   const displayCurrency = currency?.toLowerCase() || 'usd';
 
-  const handleHalf = () => setBetAmount((prev) => prev / 2);
-  const handleDouble = () => setBetAmount((prev) => prev * 2);
-  const handleIncrement = () => setBetAmount((prev) => prev + 1);
-  const handleDecrement = () => setBetAmount((prev) => Math.max(0, prev - 1));
+  const handleHalf = () => setBetAmount((prev) => Math.round(Math.max(0, prev / 2)));
+  const handleDouble = () => setBetAmount((prev) => Math.round(Math.min(userBalance, prev * 2)));
+  const handleIncrement = () => setBetAmount((prev) => Math.round(Math.min(userBalance, prev + 1)));
+  const handleDecrement = () => setBetAmount((prev) => Math.round(Math.max(0, prev - 1)));
 
   const handleSliderChange = (value: number[]) => {
     // Assuming the slider returns an array of numbers
@@ -90,7 +92,7 @@ export function BetPanel({
         <div className="flex justify-between items-center">
           <p className="text-[#9EA8DD]">Bet Amount:</p>
           <div className="flex items-center gap-1">
-            <p className="text-[#9EA8DD]">Balance: 1000</p>
+            <p className="text-[#9EA8DD]">Balance: {userBalance}</p>
             <Image
               src={`/${displayCurrency}.png`}
               alt={displayCurrency}
@@ -116,7 +118,8 @@ export function BetPanel({
             )}
             type="number"
             value={betAmount}
-            onChange={(e) => setBetAmount(Number(e.target.value))}
+            onChange={(e) => setBetAmount(Math.round(Math.min(userBalance, Number(e.target.value))))}
+            onBlur={() => setBetAmount(Math.round(Math.max(0, betAmount)))}
           />
           <div
             className={cn(
