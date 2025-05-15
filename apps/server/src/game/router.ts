@@ -52,7 +52,7 @@ export class Router {
     @Input() input: z.infer<typeof resumeSessionInputSchema>,
   ) {
     try {
-      return await this.service.resumeSession(input.userId);
+      return await this.service.resumeSession(input.sessionId);
     } catch (e) {
       throw new TRPCError({ message: 'Session not found', code: 'NOT_FOUND' });
     }
@@ -60,22 +60,26 @@ export class Router {
 
   @Mutation({
     input: z.object({
-      userId: z.string(),
+      sessionId: z.string(),
       row: z.number(),
       col: z.number(),
     }),
     output: z.object({
-      sessionId: z.number(),
+      sessionId: z.string(),
       grid: z.array(z.array(z.string())),
       status: z.string(),
     }),
   })
   @UseMiddlewares(ProtectedMiddleware)
   async revealCell(
-    @Input() input: { userId: string; row: number; col: number },
+    @Input() input: { sessionId: string; row: number; col: number },
   ) {
     try {
-      return await this.service.revealCell(input.userId, input.row, input.col);
+      return await this.service.revealCell(
+        input.sessionId,
+        input.row,
+        input.col,
+      );
     } catch (e) {
       throw new TRPCError({
         message: e.message || 'Failed to reveal cell',
@@ -85,17 +89,17 @@ export class Router {
   }
 
   @Mutation({
-    input: z.object({ userId: z.string() }),
+    input: z.object({ sessionId: z.string() }),
     output: z.object({
-      sessionId: z.number(),
+      sessionId: z.string(),
       grid: z.array(z.array(z.string())),
       status: z.string(),
     }),
   })
   @UseMiddlewares(ProtectedMiddleware)
-  async takeOut(@Input() input: { userId: string }) {
+  async takeOut(@Input() input: { sessionId: string }) {
     try {
-      return await this.service.takeOut(input.userId);
+      return await this.service.takeOut(input.sessionId);
     } catch (e) {
       throw new TRPCError({
         message: e.message || 'Failed to take out',

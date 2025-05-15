@@ -10,6 +10,7 @@ import { convertServerGrid } from "../mines/lib/helper";
 import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@web/shared/trpc/client";
 import { GamePanel } from "./GamePanel";
+import { useMobuleWebhook } from "../hooks/useMobuleWebhook";
 
 export interface GameContainerProps {
   mode?: 'demo' | 'real';
@@ -35,6 +36,12 @@ export function GameContainer({
 }
 
 function GameContainerInner({ mode = 'demo', session, currency, lang, userBalance }: GameContainerProps) {
+  const { depositWin, withdrawBet } = useMobuleWebhook({
+    session,
+    currency
+  });
+  const trx_id = `session:${session}:trx_id`;
+  const round_id = `session:${session}:round_id`;
   const api = useTRPC();
   const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
@@ -88,7 +95,13 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
   };
   // This callback is passed into BetPanel. It is called when the user clicks its Place Bet button.
   // (You cannot change BetPanel's code, so we use this as our "placeholder" to start the game.)
-  const handlePlaceBet = (bet: number) => {
+  const handlePlaceBet = async (bet: number) => {
+    await withdrawBet.mutateAsync({
+      amount: bet * 100,
+      trx_id,
+      round_id
+    });
+
     setBetAmount(bet);
     setGamePhase("running");
   };
@@ -121,7 +134,13 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
   };
 
   // Called by GamePanel when a bomb is hit.
-  const handleBombHit = () => {
+  const handleBombHit = async () => {
+    const depositWinResult = await depositWin.mutateAsync({
+      amount: 0,
+      trx_id,
+      round_id
+    });
+    console.log("Lose Deposit win result:", depositWinResult);
     setGamePhase("bombed");
     // Wait a moment before resetting so the user can see the bomb state.
     handleFinishGame("lose");
@@ -131,15 +150,22 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
   // In "running" phase it shows "Select the cell" (and does nothing on click).
   // In "cashOut" phase it acts as the cash-out trigger.
   const handleCashOut = async () => {
+    if (!session) return;
+
     if (gamePhase === "cashOut") {
       const earned = betAmount * currentMultiplier;
       console.log("Earned amount:", earned, "USD");
       // Reset the game state (but keep the bet/mines values for reusing).
       try {
         const result = await mutateAsync({ 
-          userId: "1"
+          sessionId: session
         });
-        console.log("Take out result:", result);
+        const depositWinResult = await depositWin.mutateAsync({
+          amount: earned * 100,
+          trx_id,
+          round_id
+        });
+        console.log("Take out result:", result, depositWinResult);
         setGrid(convertServerGrid(result.grid));
         handleFinishGame("win");
       } catch (error) {
@@ -162,6 +188,10 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
     }
   }, [gamePhase]);
 
+  if (!session) {
+    return <div>No session</div>;
+  }
+
   return (
     <div className="flex flex-col items-center gap-3 pb-3 lg:flex-row w-full lg:max-w-full lg:items-end h-full">
       <GamePanel
@@ -176,8 +206,10 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
         onGemClick={handleGemClick}
         onBombHit={handleBombHit}
         mode={mode}
+        sessionId={session}
       />
       <BetPanel
+        session={session}
         gamePhase={gamePhase}
         initialBet={betAmount}
         mines={mines}

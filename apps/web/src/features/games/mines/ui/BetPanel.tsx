@@ -8,6 +8,7 @@ import { Slider } from "@web/components/ui/slider";
 import { cn } from "@web/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { GamePhase } from "../lib/types";
+// import { useMobuleWebhook } from "../../hooks/useMobuleWebhook";
 
 export interface BetPanelProps {
   gamePhase: GamePhase;
@@ -19,6 +20,7 @@ export interface BetPanelProps {
   handleCashOut: () => void;
   currency?: string | null;
   userBalance?: number;
+  session?: string | null;
 }
 
 export function BetPanel({
@@ -30,15 +32,15 @@ export function BetPanel({
   handleMinesSelect,
   handleCashOut,
   currency = 'USD',
-  userBalance = 0
+  userBalance = 0,
+  // session
 }: BetPanelProps) {
-  
   const [betAmount, setBetAmount] = useState<number>(initialBet);
   const displayCurrency = currency?.toLowerCase() || 'usd';
 
   const handleHalf = () => setBetAmount((prev) => Math.round(Math.max(0, prev / 2)));
-  const handleDouble = () => setBetAmount((prev) => Math.round(Math.min(userBalance, prev * 2)));
-  const handleIncrement = () => setBetAmount((prev) => Math.round(Math.min(userBalance, prev + 1)));
+  const handleDouble = () => setBetAmount((prev) => Math.round(Math.min(userBalance / 100, prev * 2)));
+  const handleIncrement = () => setBetAmount((prev) => Math.round(Math.min(userBalance / 100, prev + 1)));
   const handleDecrement = () => setBetAmount((prev) => Math.round(Math.max(0, prev - 1)));
 
   const handleSliderChange = (value: number[]) => {
@@ -46,7 +48,7 @@ export function BetPanel({
     handleMinesSelect(value[0]);
   };
 
-  const handlePlaceBet = () => {
+  const handlePlaceBet = async () => {
     onPlaceBet(betAmount);
   };
 
@@ -92,7 +94,7 @@ export function BetPanel({
         <div className="flex justify-between items-center">
           <p className="text-[#9EA8DD]">Bet Amount:</p>
           <div className="flex items-center gap-1">
-            <p className="text-[#9EA8DD]">Balance: {userBalance}</p>
+            <p className="text-[#9EA8DD]">Balance: {userBalance / 100}</p>
             <Image
               src={`/${displayCurrency}.png`}
               alt={displayCurrency}
@@ -118,7 +120,7 @@ export function BetPanel({
             )}
             type="number"
             value={betAmount}
-            onChange={(e) => setBetAmount(Math.round(Math.min(userBalance, Number(e.target.value))))}
+            onChange={(e) => setBetAmount(Math.round(Math.min(userBalance / 100, Number(e.target.value))))}
             onBlur={() => setBetAmount(Math.round(Math.max(0, betAmount)))}
           />
           <div

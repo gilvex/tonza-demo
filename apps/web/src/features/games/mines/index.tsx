@@ -23,7 +23,7 @@ export interface MineGameProps {
   betAmount: number;
   currentMultiplier: number;
   gamePhase: GamePhase;
-  userId: string;
+  sessionId: string;
   onGameStart?: () => void;
   onBombHit?: () => void;
   onGemClick?: () => void;
@@ -37,7 +37,7 @@ export function MineGame({
   betAmount,
   currentMultiplier,
   gamePhase,
-  userId,
+  sessionId,
   onGameStart,
   onBombHit,
   onGemClick,
@@ -46,7 +46,7 @@ export function MineGame({
   const gridSize = 5; // 5x5 grid
   const [isGameover, setGameover] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
-  const [sessionId, setSessionId] = useState<number | null>(null);
+  // const [sessionId, setSessionId] = useState<string | null>(null);
   const api = useTRPC();
   const { mutateAsync: revealCell } = useMutation(api.game.revealCell.mutationOptions());
   const { mutateAsync: generateMines } = useMutation(api.game.generateMines.mutationOptions());
@@ -58,23 +58,23 @@ export function MineGame({
   useEffect(() => {
     if (gamePhase === "initial") {
       setGameover(false);
-      setSessionId(null);
+      // setSessionId(null);
     }
 
     if (gamePhase !== "running") return;
 
     // Initialize game with server
     generateMines({
-      userId,
+      sessionId,
       rows: gridSize,
       cols: gridSize,
       mines,
       backspin: false
     }).then(result => {
-      setSessionId(result.sessionId);
+      // setSessionId(result.sessionId);
       setGrid(convertServerGrid(result.grid));
     });
-  }, [gamePhase, generateMines, mines, setGrid, userId]);
+  }, [gamePhase, generateMines, mines, setGrid, sessionId]);
 
   const handleCellClick = async (index: number) => {
     if (isGameover || !sessionId) return;
@@ -89,7 +89,7 @@ export function MineGame({
 
     try {
       const result = await revealCell({
-        userId,
+        sessionId,
         row,
         col
       });

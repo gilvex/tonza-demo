@@ -9,7 +9,7 @@ export const xSchema = z.object({
 export type X = z.infer<typeof xSchema>;
 
 export const generateMinesInputSchema = z.object({
-  userId: z.string(),
+  sessionId: z.string(),
   rows: z.number().min(1),
   cols: z.number().min(1),
   mines: z.number().min(1),
@@ -17,7 +17,7 @@ export const generateMinesInputSchema = z.object({
 });
 
 export const generateMinesOutputSchema = z.object({
-  sessionId: z.number(),
+  sessionId: z.string(),
   grid: z.array(
     z.array(
       z.union([z.literal('bomb'), z.literal('success'), z.literal('hidden')]),
@@ -27,11 +27,11 @@ export const generateMinesOutputSchema = z.object({
 });
 
 export const resumeSessionInputSchema = z.object({
-  userId: z.string(),
+  sessionId: z.string(),
 });
 
 export const resumeSessionOutputSchema = z.object({
-  sessionId: z.number(),
+  sessionId: z.string(),
   grid: z.array(
     z.array(
       z.union([z.literal('bomb'), z.literal('success'), z.literal('hidden')]),

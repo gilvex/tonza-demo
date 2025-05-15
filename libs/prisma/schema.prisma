@@ -13,12 +13,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id    Int     @default(autoincrement()) @id
-  email String  @unique
-  name  String?
-  sessions Session[]
-}
 
 // model Post {
 //   id        Int      @default(autoincrement()) @id
@@ -29,10 +23,9 @@ model User {
 // }
 
 model Session {
-  id         Int      @id @default(autoincrement())
-  userId     Int      @unique
+  id         String   @id @default(uuid())
+  sessionId  String   @unique
   state      Json
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  User User?    @relation(fields: [userId], references: [id])
 }

@@ -10,13 +10,13 @@ export class Service {
 
   // Generate a new mines grid and create a session
   async generateMines({
-    userId,
+    sessionId,
     rows,
     cols,
     mines,
     backspin,
   }: {
-    userId: string;
+    sessionId: string;
     rows: number;
     cols: number;
     mines: number;
@@ -46,12 +46,12 @@ export class Service {
     }
 
     const session = await this.prisma.session.upsert({
-      where: { userId: Number(userId) },
+      where: { sessionId: sessionId },
       update: {
         state: { grid, backspin: !!backspin, status: 'awaiting first input' },
       },
       create: {
-        userId: Number(userId),
+        sessionId: sessionId,
         state: { grid, backspin: !!backspin, status: 'awaiting first input' },
       },
     });
@@ -64,11 +64,11 @@ export class Service {
   }
 
   // Reveal a cell and update the game state
-  async revealCell(userId: string, row: number, col: number) {
+  async revealCell(sessionId: string, row: number, col: number) {
     const session = (await this.prisma.session.findUnique({
-      where: { userId: Number(userId) },
+      where: { sessionId: sessionId },
     })) as {
-      id: number;
+      id: string;
       state: {
         grid: { value: 'bomb' | 'success'; revealed: boolean }[][];
         backspin: boolean;
@@ -118,7 +118,7 @@ export class Service {
     }
 
     await this.prisma.session.update({
-      where: { userId: Number(userId) },
+      where: { sessionId: sessionId },
       data: { state: { grid, backspin, status: session.state.status } },
     });
 
@@ -132,11 +132,11 @@ export class Service {
     };
   }
 
-  async takeOut(userId: string) {
+  async takeOut(sessionId: string) {
     const session = (await this.prisma.session.findUnique({
-      where: { userId: Number(userId) },
+      where: { sessionId: sessionId },
     })) as {
-      id: number;
+      id: string;
       state: {
         grid: { value: 'bomb' | 'success'; revealed: boolean }[][];
         backspin: boolean;
@@ -168,7 +168,7 @@ export class Service {
     session.state.status = 'success';
 
     await this.prisma.session.update({
-      where: { userId: Number(userId) },
+      where: { sessionId: sessionId },
       data: { state: session.state },
     });
 
@@ -179,12 +179,12 @@ export class Service {
     };
   }
 
-  // Resume a session by userId
-  async resumeSession(userId: string) {
+  // Resume a session by sessionId
+  async resumeSession(sessionId: string) {
     const session = (await this.prisma.session.findUnique({
-      where: { userId: Number(userId) },
+      where: { sessionId: sessionId },
     })) as {
-      id: number;
+      id: string;
       state: {
         grid: { value: 'bomb' | 'success'; revealed: boolean }[][];
         status: string;

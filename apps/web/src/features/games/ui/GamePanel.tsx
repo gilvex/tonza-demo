@@ -20,6 +20,7 @@ interface GamePanelProps {
   onGemClick: () => void;
   onBombHit: () => void;
   mode?: 'demo' | 'real';
+  sessionId: string;
 }
 
 const DynamicGamePanel = dynamic(() => Promise.resolve(GamePanelInner), {
@@ -41,7 +42,8 @@ function GamePanelInner({
   setGamePhase,
   onGemClick,
   onBombHit,
-  mode = 'demo'
+  mode = 'demo',
+  sessionId
 }: GamePanelProps) {
   const handleGameStart = () => {
     setGamePhase("running");
@@ -62,7 +64,7 @@ function GamePanelInner({
       <MineGame
         grid={grid}
         setGrid={setGrid}
-        userId="1"
+        sessionId={sessionId}
         mines={mines}
         betAmount={betAmount}
         currentMultiplier={currentMultiplier}
