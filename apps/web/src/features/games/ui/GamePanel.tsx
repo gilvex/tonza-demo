@@ -19,7 +19,9 @@ interface GamePanelProps {
   currentMultiplier: number;
   onGemClick: () => void;
   onBombHit: () => void;
+  mode?: 'demo' | 'real';
 }
+
 const DynamicGamePanel = dynamic(() => Promise.resolve(GamePanelInner), {
   ssr: false
 });
@@ -39,6 +41,7 @@ function GamePanelInner({
   setGamePhase,
   onGemClick,
   onBombHit,
+  mode = 'demo'
 }: GamePanelProps) {
   const handleGameStart = () => {
     setGamePhase("running");
@@ -67,6 +70,7 @@ function GamePanelInner({
         onGameStart={handleGameStart}
         onBombHit={handleBombHitInternal}
         onGemClick={onGemClick}
+        mode={mode}
       />
     </div>
   );

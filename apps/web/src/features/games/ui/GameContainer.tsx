@@ -11,16 +11,23 @@ import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@web/shared/trpc/client";
 import { GamePanel } from "./GamePanel";
 
+interface GameContainerProps {
+  mode?: 'demo' | 'real';
+  session?: string | null;
+  currency?: string | null;
+  lang?: string | null;
+}
+
 // Dynamically import components that use TRPC to ensure they only load on client
 const DynamicGameContainer = dynamic(() => Promise.resolve(GameContainerInner), {
   ssr: false
 });
 
-export function GameContainer() {
-  return <DynamicGameContainer />;
+export function GameContainer(props: GameContainerProps) {
+  return <DynamicGameContainer {...props} />;
 }
 
-function GameContainerInner() {
+function GameContainerInner({ mode = 'demo', session, currency, lang }: GameContainerProps) {
   const api = useTRPC();
   const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
@@ -33,14 +40,18 @@ function GameContainerInner() {
     // We'll allow up to 6 multiplier boxes (or fewer if there are very many mines)
     const multiplierCount = 25 - mines;
 
-    // Define a risk factor that increases as the number of mines increases.
-    // For example, if mines = 1 then riskFactor ≈ 25/24 ≈ 1.04;
-    // if mines = 24 then riskFactor = 25/1 = 25.
-    const riskFactor = 25 / (25 - mines);
-
     return Array.from({ length: multiplierCount }, (_, i) => {
-      // Exponentially increase the multiplier based on its index.
-      const factor = Math.pow(riskFactor, i + 1);
+      // Calculate probability of winning for this step
+      // Total cells = 25
+      // Remaining safe cells = 25 - mines - i (i is the number of gems already revealed)
+      // Probability = (remaining safe cells) / (total cells - i)
+      const remainingSafeCells = 25 - mines - i;
+      const remainingCells = 25 - i;
+      const probability = remainingSafeCells / remainingCells;
+      
+      // Multiplier is the inverse of probability
+      const factor = 1 / probability;
+      
       return {
         value: `${factor.toFixed(2)}x`,
         factor,
@@ -69,7 +80,7 @@ function GameContainerInner() {
     setMines(minesCount);
   };
   // This callback is passed into BetPanel. It is called when the user clicks its Place Bet button.
-  // (You cannot change BetPanel’s code, so we use this as our “placeholder” to start the game.)
+  // (You cannot change BetPanel's code, so we use this as our "placeholder" to start the game.)
   const handlePlaceBet = (bet: number) => {
     setBetAmount(bet);
     setGamePhase("running");
@@ -115,13 +126,14 @@ function GameContainerInner() {
   const handleCashOut = async () => {
     if (gamePhase === "cashOut") {
       const earned = betAmount * currentMultiplier;
-      console.log("Earned amount:", earned, "TON");
+      console.log("Earned amount:", earned, "USD");
       // Reset the game state (but keep the bet/mines values for reusing).
       try {
-        const result = await mutateAsync({ userId: "1" });
+        const result = await mutateAsync({ 
+          userId: "1"
+        });
         console.log("Take out result:", result);
         setGrid(convertServerGrid(result.grid));
-        // setGameover(true);
         handleFinishGame("win");
       } catch (error) {
         console.error('Error taking out:', error);
@@ -156,6 +168,7 @@ function GameContainerInner() {
         currentMultiplier={currentMultiplier}
         onGemClick={handleGemClick}
         onBombHit={handleBombHit}
+        mode={mode}
       />
       <BetPanel
         gamePhase={gamePhase}
@@ -165,6 +178,7 @@ function GameContainerInner() {
         onPlaceBet={handlePlaceBet}
         handleMinesSelect={handleMinesSelect}
         handleCashOut={handleCashOut}
+        currency={currency}
       />
     </div>
   );

@@ -17,6 +17,7 @@ export interface BetPanelProps {
   onPlaceBet: (bet: number) => void;
   handleMinesSelect: (mines: number) => void;
   handleCashOut: () => void;
+  currency?: string | null;
 }
 
 export function BetPanel({
@@ -27,8 +28,11 @@ export function BetPanel({
   onPlaceBet,
   handleMinesSelect,
   handleCashOut,
+  currency = 'USD'
 }: BetPanelProps) {
+  
   const [betAmount, setBetAmount] = useState<number>(initialBet);
+  const displayCurrency = currency?.toLowerCase() || 'usd';
 
   const handleHalf = () => setBetAmount((prev) => prev / 2);
   const handleDouble = () => setBetAmount((prev) => prev * 2);
@@ -83,11 +87,23 @@ export function BetPanel({
     <div className="bg-[#09122F] py-3 px-5 rounded-2xl w-full h-full sm:max-h-[35%] lg:max-h-full flex flex-col gap-2 lg:max-w-full">
       {/* Bet Amount Section */}
       <div className="flex flex-col gap-1.5">
-        <p className="text-[#9EA8DD]">Bet Amount:</p>
+        <div className="flex justify-between items-center">
+          <p className="text-[#9EA8DD]">Bet Amount:</p>
+          <div className="flex items-center gap-1">
+            <p className="text-[#9EA8DD]">Balance: 1000</p>
+            <Image
+              src={`/${displayCurrency}.png`}
+              alt={displayCurrency}
+              className="size-6"
+              width={24}
+              height={24}
+            />
+          </div>
+        </div>
         <div className="border border-[#1A2340] bg-[#01021E] rounded-xl font-bold flex items-center p-2.5 h-10 lg:h-16 gap-2.5">
           <Image
-            src="/ton.svg"
-            alt="ton"
+            src={`/${displayCurrency}.png`}
+            alt={displayCurrency}
             className="size-6"
             width={24}
             height={24}
@@ -95,7 +111,9 @@ export function BetPanel({
           <span className="h-6 border border-[#2C376D]" />
           <Input
             disabled={gamePhase !== "initial"}
-            className={cn("border-none h-6 focus-visible:ring-0 px-0 lg:text-lg")}
+            className={cn(
+              "border-none h-6 focus-visible:ring-0 px-0 lg:text-lg"
+            )}
             type="number"
             value={betAmount}
             onChange={(e) => setBetAmount(Number(e.target.value))}
@@ -162,12 +180,12 @@ export function BetPanel({
                 : () => {}
           }
         >
-          {gamePhase === "initial" && `Place bet ${betAmount} TON`}
+          {gamePhase === "initial" && `Place bet ${betAmount} ${displayCurrency.toUpperCase()}`}
           {gamePhase === "result:win" && `🎊`}
           {gamePhase === "result:lose" && `💣`}
           {gamePhase === "running" && "Select the cell"}
           {gamePhase === "cashOut" &&
-            `Take ${(betAmount * currentMultiplier).toFixed(2)} TON`}
+            `Take ${(betAmount * currentMultiplier).toFixed(2)} ${displayCurrency.toUpperCase()}`}
           {gamePhase === "bombed" && "Bombed!"}
         </Button>
       </div>

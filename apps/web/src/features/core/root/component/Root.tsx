@@ -2,25 +2,25 @@
 
 import { Suspense, useState, type PropsWithChildren } from "react";
 import {
-  miniApp,
-  retrieveLaunchParams,
-  useSignal,
+  // miniApp,
+  // retrieveLaunchParams,
+  // useSignal,
 } from "@telegram-apps/sdk-react";
 
-import { AppRoot } from "@telegram-apps/telegram-ui";
+// import { AppRoot } from "@telegram-apps/telegram-ui";
 
 import { ErrorPage } from "./ErrorPage";
 import { ErrorBoundary } from "./ErrorBoundary";
 // import { setLocale } from '@web/core/i18n/locale';
 
 import "./styles.css";
-import { useClientOnce, useDidMount, useTelegramMock } from "../hooks";
-import { init } from "../lib";
-import { TonConnectUIProvider } from "@web/features/ton-connect/ui";
+import { useDidMount } from "../hooks";
+// import { init } from "../lib";
+// import { TonConnectUIProvider } from "@web/features/ton-connect/ui";
 import { ThemeProvider } from "./ThemeProvider";
-import { MiniAppBackground } from "./MiniAppBackground";
+// import { MiniAppBackground } from "./MiniAppBackground";
 import Image from "next/image";
-import { Context } from "./Context";
+// import { Context } from "./Context";
 import { TRPCProvider } from "@web/shared/trpc/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AppRouter } from "@server/@generated/server";
@@ -66,23 +66,23 @@ function RootInner({ children }: PropsWithChildren) {
     })
   );
 
-  const isDev = true;
+  // const isDev = true;
 
   // Mock Telegram environment in development mode if needed.
-  if (isDev) {
+  // if (isDev) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    useTelegramMock();
-  }
+    // useTelegramMock();
+  // }
 
-  const lp = retrieveLaunchParams();
-  const debug = isDev || lp.startParam === "debug";
+  // const lp = retrieveLaunchParams();
+  // const debug = isDev || lp.startParam === "debug";
 
-  // Initialize the library.
-  useClientOnce(() => {
-    init(debug);
-  });
+  // // Initialize the library.
+  // useClientOnce(() => {
+  //   init(debug);
+  // });
 
-  const isDark = useSignal(miniApp.isDark);
+  // const isDark = useSignal(miniApp.isDark);
   //   const initDataUser = useSignal(initData.user);
 
   // Set the user locale.
@@ -111,14 +111,14 @@ function RootInner({ children }: PropsWithChildren) {
             </div>
           }
         >
-          <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json">
+          {/* <TonConnectUIProvider manifestUrl="/tonconnect-manifest.json"> */}
             <ThemeProvider
               attribute="class"
               defaultTheme="dark"
               enableSystem
               disableTransitionOnChange
             >
-              <AppRoot
+              {/* <AppRoot
                 appearance={isDark ? "dark" : "light"}
                 platform={
                   ["macos", "ios"].includes(lp.tgWebAppPlatform)
@@ -127,12 +127,14 @@ function RootInner({ children }: PropsWithChildren) {
                 }
                 className="h-full"
                 data-vaul-drawer-wrapper=""
-              >
-                <MiniAppBackground />
-                <Context>{children}</Context>
-              </AppRoot>
+              > */}
+                {/* <MiniAppBackground /> */}
+                {/* <Context> */}
+                  {children}
+                  {/* </Context> */}
+              {/* </AppRoot> */}
             </ThemeProvider>
-          </TonConnectUIProvider>
+          {/* </TonConnectUIProvider> */}
         </Suspense>
       </TRPCProvider>
     </QueryClientProvider>

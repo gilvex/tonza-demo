@@ -27,6 +27,7 @@ export interface MineGameProps {
   onGameStart?: () => void;
   onBombHit?: () => void;
   onGemClick?: () => void;
+  mode?: 'demo' | 'real';
 }
 
 export function MineGame({
@@ -40,6 +41,7 @@ export function MineGame({
   onGameStart,
   onBombHit,
   onGemClick,
+  mode = 'demo'
 }: MineGameProps) {
   const gridSize = 5; // 5x5 grid
   const [isGameover, setGameover] = useState(false);
@@ -191,7 +193,7 @@ export function MineGame({
                 <p className="text-xl">
                   {gamePhase === "result:lose"
                     ? "You lose"
-                    : `You win: ${(betAmount * currentMultiplier).toFixed(2)} TON`}
+                    : `You win: ${(betAmount * currentMultiplier).toFixed(2)} ${mode === 'real' ? 'USD' : 'Demo'}`}
                 </p>
               </div>
             </motion.div>
@@ -289,7 +291,6 @@ export function MineButton({
           : ""
       )}
       animate={{
-        // Use your original animation delay for the entire button if needed.
         animationDelay:
           gamePhase === "initial"
             ? `${Math.min(id / idleAnimationVariant, 25)}s`
