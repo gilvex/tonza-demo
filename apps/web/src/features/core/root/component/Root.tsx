@@ -60,7 +60,7 @@ function RootInner({ children }: PropsWithChildren) {
     createTRPCClient<AppRouter>({
       links: [
         httpBatchLink({
-          url: "https://tonza.dingir.xyz/api/trpc",
+          url: process.env.NEXT_PUBLIC_TRPC_API_DOMAIN!,
         }),
       ],
     })
