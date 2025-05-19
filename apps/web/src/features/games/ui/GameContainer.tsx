@@ -7,7 +7,7 @@ import { BetPanel } from "../mines/ui/BetPanel";
 import { GamePhase } from "../mines/lib/types";
 import { Cell } from "../mines";
 import { convertServerGrid } from "../mines/lib/helper";
-import { useMutation, UseQueryResult } from "@tanstack/react-query";
+import { useMutation, useQuery, UseQueryResult } from "@tanstack/react-query";
 import { useTRPC } from "@web/shared/trpc/client";
 import { GamePanel } from "./GamePanel";
 import { useMobuleWebhook } from "../hooks/useMobuleWebhook";
@@ -74,6 +74,8 @@ function GameContainerInner({
   const [mines, setMines] = useState<number>(1);
   const [currentMultiplier, setCurrentMultiplier] = useState<number>(0);
   const [grid, setGrid] = useState<Cell[]>([]);
+  
+  const gameSession = useQuery(api.game.resumeSession.queryOptions({ userId: checkSession.data?.id_player ?? "" }))
 
   const updateMultipliers = (mines: number) => {
     // We'll allow up to 6 multiplier boxes (or fewer if there are very many mines)
@@ -105,10 +107,15 @@ function GameContainerInner({
   const [gamePhase, setGamePhase] = useState<GamePhase>("initial");
 
   useEffect(() => {
+    if (gameSession.data?.grid) {
+      setGrid(convertServerGrid(gameSession.data.grid));
+      setGamePhase(gameSession.data.status as GamePhase);
+    }
+
     if (!gamePhase.includes("result")) {
       setMultiplies(updateMultipliers(mines));
     }
-  }, [gamePhase, mines]);
+  }, [gamePhase, gameSession, mines]);
   // Game phase controls which components (and button text) to show:
   // - "initial": show BetPanel (to enter bet/mines)
   // - "running": game is live and waiting for a cell selection
