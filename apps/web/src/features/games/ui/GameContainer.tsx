@@ -67,7 +67,6 @@ function GameContainerInner({
     session,
     currency,
   });
-  const trx_id = `session:${session ?? mode}:trx_`;
   const api = useTRPC();
   const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
@@ -123,6 +122,7 @@ function GameContainerInner({
     }
   }, [gamePhase]);
   const round_id = `session:${session ?? mode}:${roundCounter}`;
+  const trx_id = `session:${session ?? mode}:round_${roundCounter}:trx_`;
 
   const handleMinesSelect = (minesCount: number) => {
     setMines(minesCount);
