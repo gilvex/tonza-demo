@@ -17,8 +17,7 @@ export interface GameContainerProps {
   session?: string | null;
   currency?: string | null;
   lang?: string | null;
-  userBalance?:
-    | UseQueryResult<{ balance: number }, Error>;
+  userBalance?: UseQueryResult<{ balance: number }, Error>;
   demoBalance?: number;
   updateDemoBalance?: (balance: number) => void;
 }
@@ -38,10 +37,20 @@ export function GameContainer({
   lang = "en",
   userBalance,
   demoBalance,
-  updateDemoBalance
+  updateDemoBalance,
 }: GameContainerProps) {
   return (
-    <DynamicGameContainer {...{ mode, session, currency, lang, userBalance, demoBalance, updateDemoBalance }} />
+    <DynamicGameContainer
+      {...{
+        mode,
+        session,
+        currency,
+        lang,
+        userBalance,
+        demoBalance,
+        updateDemoBalance,
+      }}
+    />
   );
 }
 
@@ -52,14 +61,13 @@ function GameContainerInner({
   lang,
   userBalance,
   demoBalance,
-  updateDemoBalance
+  updateDemoBalance,
 }: GameContainerProps) {
   const { depositWin, withdrawBet } = useMobuleWebhook({
     session,
     currency,
   });
   const trx_id = `session:${session ?? mode}:trx_`;
-  const round_id = `session:${session ?? mode}`;
   const api = useTRPC();
   const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
@@ -107,6 +115,14 @@ function GameContainerInner({
   // - "running": game is live and waiting for a cell selection
   // - "cashOut": a safe cell was hit; dynamic button now acts as cash-out trigger
   // - "bombed": a bomb was hit; game ends
+
+  const [roundCounter, setRoundCounter] = useState(0);
+  useEffect(() => {
+    if (gamePhase === "initial") {
+      setRoundCounter((prev) => prev + 1);
+    }
+  }, [gamePhase]);
+  const round_id = `session:${session ?? mode}:${roundCounter}`;
 
   const handleMinesSelect = (minesCount: number) => {
     setMines(minesCount);
@@ -208,7 +224,9 @@ function GameContainerInner({
         }
 
         if (mode === "demo") {
-          updateDemoBalance?.(demoBalance ? demoBalance + Math.round(earned * 100) / 100 : 0);
+          updateDemoBalance?.(
+            demoBalance ? demoBalance + Math.round(earned * 100) / 100 : 0
+          );
         }
 
         setGrid(convertServerGrid(result.grid));
