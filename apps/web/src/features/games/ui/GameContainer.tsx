@@ -37,9 +37,11 @@ export function GameContainer({
   currency = "USD",
   lang = "en",
   userBalance,
+  demoBalance,
+  updateDemoBalance
 }: GameContainerProps) {
   return (
-    <DynamicGameContainer {...{ mode, session, currency, lang, userBalance }} />
+    <DynamicGameContainer {...{ mode, session, currency, lang, userBalance, demoBalance, updateDemoBalance }} />
   );
 }
 
