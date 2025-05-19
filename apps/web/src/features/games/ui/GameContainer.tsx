@@ -220,7 +220,7 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
         handleMinesSelect={handleMinesSelect}
         handleCashOut={handleCashOut}
         currency={currency}
-        userBalance={userBalance}
+        userBalance={mode === "demo" ? 99999 : userBalance}
       />
     </div>
   );
