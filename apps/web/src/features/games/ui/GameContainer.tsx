@@ -58,8 +58,8 @@ function GameContainerInner({
     session,
     currency,
   });
-  const trx_id = `session:${session ?? mode}:trx_id`;
-  const round_id = `session:${session ?? mode}:round_id`;
+  const trx_id = `session:${session ?? mode}:trx_`;
+  const round_id = `session:${session ?? mode}`;
   const api = useTRPC();
   const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
@@ -117,7 +117,7 @@ function GameContainerInner({
     if (mode !== "demo") {
       await withdrawBet.mutateAsync({
         amount: bet * 100,
-        trx_id,
+        trx_id: `${trx_id}_bet`,
         round_id,
       });
     } else {
@@ -162,12 +162,12 @@ function GameContainerInner({
   // Called by GamePanel when a bomb is hit.
   const handleBombHit = async () => {
     if (mode !== "demo") {
-      const depositWinResult = await depositWin.mutateAsync({
-        amount: 0,
-        trx_id,
-        round_id,
-      });
-      console.log("Lose Deposit win result:", depositWinResult);
+      // const depositWinResult = await depositWin.mutateAsync({
+      //   amount: 0,
+      //   trx_id,
+      //   round_id,
+      // });
+      // console.log("Lose Deposit win result:", depositWinResult);
     } else {
       // updateDemoBalance?.(demoBalance ? demoBalance - betAmount : 0);
     }
@@ -197,7 +197,7 @@ function GameContainerInner({
         if (session) {
           const depositWinResult = await depositWin.mutateAsync({
             amount: earned * 100,
-            trx_id,
+            trx_id: `${trx_id}_win`,
             round_id,
           });
           console.log("Take out result:", result, depositWinResult);
