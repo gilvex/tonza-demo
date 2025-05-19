@@ -20,7 +20,9 @@ export interface BetPanelProps {
   handleMinesSelect: (mines: number) => void;
   handleCashOut: () => void;
   currency?: string | null;
-  userBalance?: UseQueryResult<{ balance: number }, Error> | { data: { balance: number } };
+  userBalance?:
+    | UseQueryResult<{ balance: number }, Error>
+    | { data: { balance: number } };
   session?: string | null;
 }
 
@@ -32,21 +34,24 @@ export function BetPanel({
   onPlaceBet,
   handleMinesSelect,
   handleCashOut,
-  currency = 'USD',
+  currency = "USD",
   userBalance: userBalanceQuery,
   // session
 }: BetPanelProps) {
   const [betAmount, setBetAmount] = useState<number>(initialBet);
-  const displayCurrency = currency?.toLowerCase() || 'usd';
+  const displayCurrency = currency?.toLowerCase() || "usd";
 
   const userBalanceValue = userBalanceQuery?.data?.balance || 0;
   const userBalance = userBalanceValue * 100; // Assuming userBalance is in cents
 
-
-  const handleHalf = () => setBetAmount((prev) => Math.round(Math.max(0, prev / 2)));
-  const handleDouble = () => setBetAmount((prev) => Math.round(Math.min(userBalance / 100, prev * 2)));
-  const handleIncrement = () => setBetAmount((prev) => Math.round(Math.min(userBalance / 100, prev + 1)));
-  const handleDecrement = () => setBetAmount((prev) => Math.round(Math.max(0, prev - 1)));
+  const handleHalf = () =>
+    setBetAmount((prev) => Math.round(Math.max(0, prev / 2)));
+  const handleDouble = () =>
+    setBetAmount((prev) => Math.round(Math.min(userBalance / 100, prev * 2)));
+  const handleIncrement = () =>
+    setBetAmount((prev) => Math.round(Math.min(userBalance / 100, prev + 1)));
+  const handleDecrement = () =>
+    setBetAmount((prev) => Math.round(Math.max(0, prev - 1)));
 
   const handleSliderChange = (value: number[]) => {
     // Assuming the slider returns an array of numbers
@@ -79,12 +84,14 @@ export function BetPanel({
           className={cn(
             "hover:bg-[#12182d] w-full rounded-t-md h-full *:stroke-[4] hover:cursor-pointer"
           )}
+          disabled={gamePhase !== "initial"}
         >
           <ChevronUp className="w-full h-3" />
         </button>
         <button
           onClick={handleDecrement}
           className="hover:bg-[#12182d] w-full rounded-b-md h-full *:stroke-[4] hover:cursor-pointer"
+          disabled={gamePhase !== "initial"}
         >
           <ChevronDown className="w-full h-3" />
         </button>
@@ -125,7 +132,11 @@ export function BetPanel({
             )}
             type="number"
             value={betAmount}
-            onChange={(e) => setBetAmount(Math.round(Math.min(userBalance / 100, Number(e.target.value))))}
+            onChange={(e) =>
+              setBetAmount(
+                Math.round(Math.min(userBalance / 100, Number(e.target.value)))
+              )
+            }
             onBlur={() => setBetAmount(Math.round(Math.max(0, betAmount)))}
           />
           <div
@@ -192,7 +203,8 @@ export function BetPanel({
                 : () => {}
           }
         >
-          {gamePhase === "initial" && `Place bet ${betAmount} ${displayCurrency.toUpperCase()}`}
+          {gamePhase === "initial" &&
+            `Place bet ${betAmount} ${displayCurrency.toUpperCase()}`}
           {gamePhase === "result:win" && `🎊`}
           {gamePhase === "result:lose" && `💣`}
           {gamePhase === "running" && "Select the cell"}

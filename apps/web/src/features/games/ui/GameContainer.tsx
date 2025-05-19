@@ -169,7 +169,7 @@ function GameContainerInner({
       });
       console.log("Lose Deposit win result:", depositWinResult);
     } else {
-      updateDemoBalance?.(demoBalance ? demoBalance - betAmount : 0);
+      // updateDemoBalance?.(demoBalance ? demoBalance - betAmount : 0);
     }
 
     if (userBalance && "refetch" in userBalance) {
@@ -208,7 +208,7 @@ function GameContainerInner({
         }
 
         if (mode === "demo") {
-          updateDemoBalance?.(demoBalance ? demoBalance + earned : 0);
+          updateDemoBalance?.(demoBalance ? demoBalance + Math.round(earned * 100) / 100 : 0);
         }
 
         setGrid(convertServerGrid(result.grid));
