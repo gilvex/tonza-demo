@@ -40,8 +40,8 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
     session,
     currency
   });
-  const trx_id = `session:${session}:trx_id`;
-  const round_id = `session:${session}:round_id`;
+  const trx_id = `session:${session ?? mode}:trx_id`;
+  const round_id = `session:${session ?? mode}:round_id`;
   const api = useTRPC();
   const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
@@ -150,22 +150,24 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
   // In "running" phase it shows "Select the cell" (and does nothing on click).
   // In "cashOut" phase it acts as the cash-out trigger.
   const handleCashOut = async () => {
-    if (!session) return;
-
     if (gamePhase === "cashOut") {
       const earned = betAmount * currentMultiplier;
       console.log("Earned amount:", earned, "USD");
       // Reset the game state (but keep the bet/mines values for reusing).
       try {
         const result = await mutateAsync({ 
-          sessionId: session
+          sessionId: session ?? mode
         });
-        const depositWinResult = await depositWin.mutateAsync({
-          amount: earned * 100,
-          trx_id,
-          round_id
-        });
-        console.log("Take out result:", result, depositWinResult);
+
+        if(session) {
+          const depositWinResult = await depositWin.mutateAsync({
+            amount: earned * 100,
+            trx_id,
+            round_id
+          });
+          console.log("Take out result:", result, depositWinResult);
+        }
+
         setGrid(convertServerGrid(result.grid));
         handleFinishGame("win");
       } catch (error) {
@@ -188,7 +190,7 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
     }
   }, [gamePhase]);
 
-  if (!session) {
+  if (!session && mode !== "demo") {
     return <div>No session</div>;
   }
 
@@ -206,10 +208,10 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
         onGemClick={handleGemClick}
         onBombHit={handleBombHit}
         mode={mode}
-        sessionId={session}
+        sessionId={session ?? mode}
       />
       <BetPanel
-        session={session}
+        session={session ?? mode}
         gamePhase={gamePhase}
         initialBet={betAmount}
         mines={mines}
