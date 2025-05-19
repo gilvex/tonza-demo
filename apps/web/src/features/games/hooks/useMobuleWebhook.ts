@@ -12,7 +12,10 @@ export const useMobuleWebhook = (params: WebhookParams) => {
   const { session, currency } = params;
 
   // Check session
-  const checkSession = useQuery({
+  const checkSession = useQuery<{
+    id_player: string;
+    balance: number;
+  }>({
     queryKey: ["mobule", "check.session", session, currency],
     queryFn: async () => {
       if (!session) return { balance: 0 };
@@ -32,7 +35,7 @@ export const useMobuleWebhook = (params: WebhookParams) => {
         }
       );
 
-      const data = await response.json();
+      const data = (await response.json())?.response;
 
       if (data.status === 200) {
         return data.response;

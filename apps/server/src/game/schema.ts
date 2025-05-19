@@ -9,6 +9,7 @@ export const xSchema = z.object({
 export type X = z.infer<typeof xSchema>;
 
 export const generateMinesInputSchema = z.object({
+  userId: z.string(),
   sessionId: z.string(),
   rows: z.number().min(1),
   cols: z.number().min(1),
@@ -27,7 +28,7 @@ export const generateMinesOutputSchema = z.object({
 });
 
 export const resumeSessionInputSchema = z.object({
-  sessionId: z.string(),
+  userId: z.string(),
 });
 
 export const resumeSessionOutputSchema = z.object({

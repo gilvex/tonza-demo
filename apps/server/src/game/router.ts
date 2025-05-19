@@ -52,7 +52,7 @@ export class Router {
     @Input() input: z.infer<typeof resumeSessionInputSchema>,
   ) {
     try {
-      return await this.service.resumeSession(input.sessionId);
+      return await this.service.resumeSession(input.userId);
     } catch (e) {
       throw new TRPCError({ message: 'Session not found', code: 'NOT_FOUND' });
     }

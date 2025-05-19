@@ -63,7 +63,7 @@ function GameContainerInner({
   demoBalance,
   updateDemoBalance,
 }: GameContainerProps) {
-  const { depositWin, withdrawBet } = useMobuleWebhook({
+  const { depositWin, withdrawBet, checkSession } = useMobuleWebhook({
     session,
     currency,
   });

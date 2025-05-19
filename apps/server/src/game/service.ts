@@ -10,12 +10,14 @@ export class Service {
 
   // Generate a new mines grid and create a session
   async generateMines({
+    userId,
     sessionId,
     rows,
     cols,
     mines,
     backspin,
   }: {
+    userId: string;
     sessionId: string;
     rows: number;
     cols: number;
@@ -51,6 +53,7 @@ export class Service {
         state: { grid, backspin: !!backspin, status: 'awaiting first input' },
       },
       create: {
+        userId: userId,
         sessionId: sessionId,
         state: { grid, backspin: !!backspin, status: 'awaiting first input' },
       },
@@ -180,24 +183,31 @@ export class Service {
   }
 
   // Resume a session by sessionId
-  async resumeSession(sessionId: string) {
-    const session = (await this.prisma.session.findUnique({
-      where: { sessionId: sessionId },
-    })) as {
-      id: string;
-      state: {
-        grid: { value: 'bomb' | 'success'; revealed: boolean }[][];
-        status: string;
-      } | null;
-    };
+  async resumeSession(userId: string) {
+    const sessions = await this.prisma.session.findMany({
+      where: { userId: userId },
+    });
+
+    type SessionState = {
+      grid: { value: 'bomb' | 'success'; revealed: boolean }[][];
+      backspin: boolean;
+      status: string;
+    } | null;
+
+    const session = sessions.find((s) => {
+      const state = s.state as SessionState;
+      return state && state.status !== 'failure' && state.status !== 'fullwin';
+    });
 
     if (!session) throw new Error('Session not found');
     if (!session.state) throw new Error('Session state is null');
 
+    const state = session.state as SessionState;
+
     return {
       sessionId: session.id,
-      grid: this.getRevealedGrid(session.state.grid),
-      status: session.state.status,
+      grid: this.getRevealedGrid(state!.grid),
+      status: state!.status,
     };
   }
 

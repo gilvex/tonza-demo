@@ -9,6 +9,7 @@ import { GamePhase } from "./lib/types";
 import { useTRPC } from "@web/shared/trpc/client";
 import { convertServerGrid } from "./lib/helper";
 import { useMutation } from "@tanstack/react-query";
+import { useMobuleWebhook } from "../hooks/useMobuleWebhook";
 
 export interface Cell {
   isBomb: boolean;
@@ -44,6 +45,7 @@ export function MineGame({
   mode = 'demo'
 }: MineGameProps) {
   const gridSize = 5; // 5x5 grid
+  const { checkSession } = useMobuleWebhook({ session: sessionId });
   const [isGameover, setGameover] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   // const [sessionId, setSessionId] = useState<string | null>(null);
@@ -63,8 +65,11 @@ export function MineGame({
 
     if (gamePhase !== "running") return;
 
+    if (!checkSession.data?.id_player) return console.error("No player ID found");
+
     // Initialize game with server
     generateMines({
+      userId: checkSession.data?.id_player,
       sessionId,
       rows: gridSize,
       cols: gridSize,
@@ -74,7 +79,7 @@ export function MineGame({
       // setSessionId(result.sessionId);
       setGrid(convertServerGrid(result.grid));
     });
-  }, [gamePhase, generateMines, mines, setGrid, sessionId]);
+  }, [gamePhase, generateMines, mines, setGrid, sessionId, checkSession.data?.id_player]);
 
   const handleCellClick = async (index: number) => {
     if (isGameover || !sessionId) return;

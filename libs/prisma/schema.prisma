@@ -24,6 +24,7 @@ datasource db {
 
 model Session {
   id         String   @id @default(uuid())
+  userId     String
   sessionId  String   @unique
   state      Json
   createdAt  DateTime @default(now())
