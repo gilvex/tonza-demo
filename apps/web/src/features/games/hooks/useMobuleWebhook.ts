@@ -35,7 +35,7 @@ export const useMobuleWebhook = (params: WebhookParams) => {
         }
       );
 
-      const data = (await response.json())?.response;
+      const data = await response.json();
 
       if (data.status === 200) {
         return data.response;
