@@ -64,7 +64,7 @@ export function MineGame({
     }
 
     if (gamePhase !== "running") return;
-
+    console.log(checkSession.data);
     if (!checkSession.data?.id_player) return console.error("No player ID found");
 
     // Initialize game with server
