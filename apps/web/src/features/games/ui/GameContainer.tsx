@@ -262,7 +262,7 @@ function GameContainerInner({
         handleCashOut={handleCashOut}
         currency={currency}
         userBalance={
-          mode === "demo" ? { data: { balance: demoBalance ?? 0 } } : userBalance
+          mode === "demo" ? { data: { balance: demoBalance! } } : userBalance
         }
       />
     </div>
