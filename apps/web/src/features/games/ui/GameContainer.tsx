@@ -13,39 +13,52 @@ import { GamePanel } from "./GamePanel";
 import { useMobuleWebhook } from "../hooks/useMobuleWebhook";
 
 export interface GameContainerProps {
-  mode?: 'demo' | 'real';
+  mode?: "demo" | "real";
   session?: string | null;
   currency?: string | null;
   lang?: string | null;
-  userBalance?: UseQueryResult<{ balance: number }, Error> | { data: { balance: number } };
+  userBalance?:
+    | UseQueryResult<{ balance: number }, Error>
+    | { data: { balance: number } };
 }
 
 // Dynamically import components that use TRPC to ensure they only load on client
-const DynamicGameContainer = dynamic(() => Promise.resolve(GameContainerInner), {
-  ssr: false
-});
+const DynamicGameContainer = dynamic(
+  () => Promise.resolve(GameContainerInner),
+  {
+    ssr: false,
+  }
+);
 
 export function GameContainer({
-  mode = 'demo',
+  mode = "demo",
   session,
-  currency = 'USD',
-  lang = 'en',
-  userBalance
+  currency = "USD",
+  lang = "en",
+  userBalance,
 }: GameContainerProps) {
-  return <DynamicGameContainer {...{ mode, session, currency, lang, userBalance }} />;
+  return (
+    <DynamicGameContainer {...{ mode, session, currency, lang, userBalance }} />
+  );
 }
 
-function GameContainerInner({ mode = 'demo', session, currency, lang, userBalance }: GameContainerProps) {
+function GameContainerInner({
+  mode = "demo",
+  session,
+  currency,
+  lang,
+  userBalance,
+}: GameContainerProps) {
   const { depositWin, withdrawBet } = useMobuleWebhook({
     session,
-    currency
+    currency,
   });
   const trx_id = `session:${session ?? mode}:trx_id`;
   const round_id = `session:${session ?? mode}:round_id`;
   const api = useTRPC();
   const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
   // These states will persist even after a game is finished.
-  const [betAmount, setBetAmount] = useState<number>(10);
+  const [betAmount, setBetAmount] = useState<number>(0);
   const [mines, setMines] = useState<number>(1);
   const [currentMultiplier, setCurrentMultiplier] = useState<number>(0);
   const [grid, setGrid] = useState<Cell[]>([]);
@@ -62,10 +75,10 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
       const remainingSafeCells = 25 - mines - i;
       const remainingCells = 25 - i;
       const probability = remainingSafeCells / remainingCells;
-      
+
       // Multiplier is the inverse of probability
       const factor = 1 / probability;
-      
+
       return {
         value: `${factor.toFixed(2)}x`,
         factor,
@@ -96,13 +109,15 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
   // This callback is passed into BetPanel. It is called when the user clicks its Place Bet button.
   // (You cannot change BetPanel's code, so we use this as our "placeholder" to start the game.)
   const handlePlaceBet = async (bet: number) => {
-    await withdrawBet.mutateAsync({
-      amount: bet * 100,
-      trx_id,
-      round_id
-    });
+    if (mode !== "demo") {
+      await withdrawBet.mutateAsync({
+        amount: bet * 100,
+        trx_id,
+        round_id,
+      });
+    }
 
-    if(userBalance && 'refetch' in userBalance) {
+    if (userBalance && "refetch" in userBalance) {
       await userBalance.refetch();
     }
 
@@ -139,12 +154,14 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
 
   // Called by GamePanel when a bomb is hit.
   const handleBombHit = async () => {
-    const depositWinResult = await depositWin.mutateAsync({
-      amount: 0,
-      trx_id,
-      round_id
-    });
-    console.log("Lose Deposit win result:", depositWinResult);
+    if (mode !== "demo") {
+      const depositWinResult = await depositWin.mutateAsync({
+        amount: 0,
+        trx_id,
+        round_id,
+      });
+      console.log("Lose Deposit win result:", depositWinResult);
+    }
     setGamePhase("bombed");
     // Wait a moment before resetting so the user can see the bomb state.
     handleFinishGame("lose");
@@ -159,15 +176,15 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
       console.log("Earned amount:", earned, "USD");
       // Reset the game state (but keep the bet/mines values for reusing).
       try {
-        const result = await mutateAsync({ 
-          sessionId: session ?? mode
+        const result = await mutateAsync({
+          sessionId: session ?? mode,
         });
 
-        if(session) {
+        if (session) {
           const depositWinResult = await depositWin.mutateAsync({
             amount: earned * 100,
             trx_id,
-            round_id
+            round_id,
           });
           console.log("Take out result:", result, depositWinResult);
         }
@@ -175,7 +192,7 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
         setGrid(convertServerGrid(result.grid));
         handleFinishGame("win");
       } catch (error) {
-        console.error('Error taking out:', error);
+        console.error("Error taking out:", error);
       }
     }
   };
@@ -224,7 +241,9 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
         handleMinesSelect={handleMinesSelect}
         handleCashOut={handleCashOut}
         currency={currency}
-        userBalance={mode === "demo" ? { data: { balance: 9999 } } : userBalance}
+        userBalance={
+          mode === "demo" ? { data: { balance: 9999 } } : userBalance
+        }
       />
     </div>
   );
