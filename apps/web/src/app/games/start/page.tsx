@@ -29,7 +29,7 @@ export default function GamePage() {
         session={session}
         currency={currency}
         lang={lang}
-        userBalance={checkBalance.data?.balance || 0}
+        userBalance={checkBalance}
       />
     </div>
   );

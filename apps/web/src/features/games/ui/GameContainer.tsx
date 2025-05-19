@@ -18,8 +18,9 @@ export interface GameContainerProps {
   currency?: string | null;
   lang?: string | null;
   userBalance?:
-    | UseQueryResult<{ balance: number }, Error>
-    | { data: { balance: number } };
+    | UseQueryResult<{ balance: number }, Error>;
+  demoBalance?: number;
+  updateDemoBalance?: (balance: number) => void;
 }
 
 // Dynamically import components that use TRPC to ensure they only load on client
@@ -48,6 +49,8 @@ function GameContainerInner({
   currency,
   lang,
   userBalance,
+  demoBalance,
+  updateDemoBalance
 }: GameContainerProps) {
   const { depositWin, withdrawBet } = useMobuleWebhook({
     session,
@@ -115,6 +118,8 @@ function GameContainerInner({
         trx_id,
         round_id,
       });
+    } else {
+      updateDemoBalance?.(demoBalance ? demoBalance - bet : 0);
     }
 
     if (userBalance && "refetch" in userBalance) {
@@ -161,7 +166,14 @@ function GameContainerInner({
         round_id,
       });
       console.log("Lose Deposit win result:", depositWinResult);
+    } else {
+      updateDemoBalance?.(demoBalance ? demoBalance - betAmount : 0);
     }
+
+    if (userBalance && "refetch" in userBalance) {
+      await userBalance.refetch();
+    }
+
     setGamePhase("bombed");
     // Wait a moment before resetting so the user can see the bomb state.
     handleFinishGame("lose");
@@ -187,6 +199,14 @@ function GameContainerInner({
             round_id,
           });
           console.log("Take out result:", result, depositWinResult);
+        }
+
+        if (userBalance && "refetch" in userBalance) {
+          await userBalance.refetch();
+        }
+
+        if (mode === "demo") {
+          updateDemoBalance?.(demoBalance ? demoBalance + earned : 0);
         }
 
         setGrid(convertServerGrid(result.grid));
@@ -242,7 +262,7 @@ function GameContainerInner({
         handleCashOut={handleCashOut}
         currency={currency}
         userBalance={
-          mode === "demo" ? { data: { balance: 9999 } } : userBalance
+          mode === "demo" ? { data: { balance: demoBalance ?? 0 } } : userBalance
         }
       />
     </div>
