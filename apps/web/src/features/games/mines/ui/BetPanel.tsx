@@ -8,6 +8,7 @@ import { Slider } from "@web/components/ui/slider";
 import { cn } from "@web/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { GamePhase } from "../lib/types";
+import { UseQueryResult } from "@tanstack/react-query";
 // import { useMobuleWebhook } from "../../hooks/useMobuleWebhook";
 
 export interface BetPanelProps {
@@ -19,7 +20,7 @@ export interface BetPanelProps {
   handleMinesSelect: (mines: number) => void;
   handleCashOut: () => void;
   currency?: string | null;
-  userBalance?: number;
+  userBalance?: UseQueryResult<{ balance: number }, Error> | { data: { balance: number } };
   session?: string | null;
 }
 
@@ -32,11 +33,15 @@ export function BetPanel({
   handleMinesSelect,
   handleCashOut,
   currency = 'USD',
-  userBalance = 0,
+  userBalance: userBalanceQuery,
   // session
 }: BetPanelProps) {
   const [betAmount, setBetAmount] = useState<number>(initialBet);
   const displayCurrency = currency?.toLowerCase() || 'usd';
+
+  const userBalanceValue = userBalanceQuery?.data?.balance || 0;
+  const userBalance = userBalanceValue * 100; // Assuming userBalance is in cents
+
 
   const handleHalf = () => setBetAmount((prev) => Math.round(Math.max(0, prev / 2)));
   const handleDouble = () => setBetAmount((prev) => Math.round(Math.min(userBalance / 100, prev * 2)));
@@ -170,6 +175,8 @@ export function BetPanel({
         <Button
           className={cn(
             "from-[#85DAFF] to-60% font-bold to-[#5991FE] bg-gradient-to-br hover:bg-[#161f4b] w-full lg:h-16 lg:text-xl",
+            betAmount <= 0 && "opacity-50 cursor-not-allowed",
+            gamePhase === "initial" && betAmount > 0 && "hover:cursor-pointer",
             gamePhase === "running" &&
               "bg-[#1B265C] text-white hover:bg-[#161f4b]",
             (gamePhase === "cashOut" || gamePhase === "result:win") &&
@@ -180,7 +187,7 @@ export function BetPanel({
           onClick={
             gamePhase === "cashOut"
               ? handleCashOut
-              : gamePhase === "initial"
+              : gamePhase === "initial" && betAmount > 0
                 ? handlePlaceBet
                 : () => {}
           }

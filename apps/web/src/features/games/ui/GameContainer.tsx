@@ -7,7 +7,7 @@ import { BetPanel } from "../mines/ui/BetPanel";
 import { GamePhase } from "../mines/lib/types";
 import { Cell } from "../mines";
 import { convertServerGrid } from "../mines/lib/helper";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, UseQueryResult } from "@tanstack/react-query";
 import { useTRPC } from "@web/shared/trpc/client";
 import { GamePanel } from "./GamePanel";
 import { useMobuleWebhook } from "../hooks/useMobuleWebhook";
@@ -17,7 +17,7 @@ export interface GameContainerProps {
   session?: string | null;
   currency?: string | null;
   lang?: string | null;
-  userBalance?: number;
+  userBalance?: UseQueryResult<{ balance: number }, Error> | { data: { balance: number } };
 }
 
 // Dynamically import components that use TRPC to ensure they only load on client
@@ -30,7 +30,7 @@ export function GameContainer({
   session,
   currency = 'USD',
   lang = 'en',
-  userBalance = 0
+  userBalance
 }: GameContainerProps) {
   return <DynamicGameContainer {...{ mode, session, currency, lang, userBalance }} />;
 }
@@ -101,6 +101,10 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
       trx_id,
       round_id
     });
+
+    if(userBalance && 'refetch' in userBalance) {
+      await userBalance.refetch();
+    }
 
     setBetAmount(bet);
     setGamePhase("running");
@@ -220,7 +224,7 @@ function GameContainerInner({ mode = 'demo', session, currency, lang, userBalanc
         handleMinesSelect={handleMinesSelect}
         handleCashOut={handleCashOut}
         currency={currency}
-        userBalance={mode === "demo" ? 99999 : userBalance}
+        userBalance={mode === "demo" ? { data: { balance: 9999 } } : userBalance}
       />
     </div>
   );
