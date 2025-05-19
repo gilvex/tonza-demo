@@ -43,7 +43,7 @@ export function BetPanel({
   const displayCurrency = currency?.toLowerCase() || "usd";
 
   const userBalanceValue = userBalanceQuery?.data?.balance || 0;
-  const userBalance =  userBalanceValue * (session === "demo" ? 1 : 100); // Assuming userBalance is in cents
+  const userBalance =  userBalanceValue * (session === "demo" ? 100 : 1); // Assuming userBalance is in cents
 
   const handleHalf = () =>
     setBetAmount((prev) => Math.round(Math.max(0, prev / 2)));
