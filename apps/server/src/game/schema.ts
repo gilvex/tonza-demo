@@ -31,12 +31,14 @@ export const resumeSessionInputSchema = z.object({
   userId: z.string(),
 });
 
-export const resumeSessionOutputSchema = z.object({
-  sessionId: z.string(),
-  grid: z.array(
-    z.array(
-      z.union([z.literal('bomb'), z.literal('success'), z.literal('hidden')]),
+export const resumeSessionOutputSchema = z
+  .object({
+    sessionId: z.string(),
+    grid: z.array(
+      z.array(
+        z.union([z.literal('bomb'), z.literal('success'), z.literal('hidden')]),
+      ),
     ),
-  ),
-  status: z.string(),
-});
+    status: z.string(),
+  })
+  .nullable();

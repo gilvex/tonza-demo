@@ -21,6 +21,7 @@ interface GamePanelProps {
   onBombHit: () => void;
   mode?: 'demo' | 'real';
   sessionId: string;
+  gameSessionId?: string;
 }
 
 const DynamicGamePanel = dynamic(() => Promise.resolve(GamePanelInner), {
@@ -43,7 +44,8 @@ function GamePanelInner({
   onGemClick,
   onBombHit,
   mode = 'demo',
-  sessionId
+  sessionId,
+  gameSessionId,
 }: GamePanelProps) {
   const handleGameStart = () => {
     setGamePhase("running");
@@ -73,6 +75,7 @@ function GamePanelInner({
         onBombHit={handleBombHitInternal}
         onGemClick={onGemClick}
         mode={mode}
+        gameSessionId={gameSessionId}
       />
     </div>
   );

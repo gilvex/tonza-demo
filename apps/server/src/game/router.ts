@@ -54,6 +54,7 @@ export class Router {
     try {
       return await this.service.resumeSession(input.userId);
     } catch (e) {
+      console.error('Error resuming session:', e);
       throw new TRPCError({ message: 'Session not found', code: 'NOT_FOUND' });
     }
   }

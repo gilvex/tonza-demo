@@ -68,6 +68,7 @@ export class Service {
 
   // Reveal a cell and update the game state
   async revealCell(sessionId: string, row: number, col: number) {
+    console.log('Revealing cell:', { sessionId, row, col });
     const session = (await this.prisma.session.findUnique({
       where: { sessionId: sessionId },
     })) as {
@@ -199,13 +200,15 @@ export class Service {
       return state && state.status !== 'failure' && state.status !== 'fullwin';
     });
 
-    if (!session) throw new Error('Session not found');
+    if (!session) {
+      return null;
+    }
     if (!session.state) throw new Error('Session state is null');
 
     const state = session.state as SessionState;
 
     return {
-      sessionId: session.id,
+      sessionId: session.sessionId,
       grid: this.getRevealedGrid(state!.grid),
       status: state!.status,
     };

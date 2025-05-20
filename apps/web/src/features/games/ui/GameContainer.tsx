@@ -107,15 +107,18 @@ function GameContainerInner({
   const [gamePhase, setGamePhase] = useState<GamePhase>("initial");
 
   useEffect(() => {
+    console.log("Game session data:", gameSession.data);
     if (gameSession.data?.grid) {
       setGrid(convertServerGrid(gameSession.data.grid));
       setGamePhase(gameSession.data.status as GamePhase);
     }
+  }, [gameSession.data]);
 
+  useEffect(() => {
     if (!gamePhase.includes("result")) {
       setMultiplies(updateMultipliers(mines));
     }
-  }, [gamePhase, gameSession, mines]);
+  }, [gamePhase, mines]);
   // Game phase controls which components (and button text) to show:
   // - "initial": show BetPanel (to enter bet/mines)
   // - "running": game is live and waiting for a cell selection
@@ -214,7 +217,7 @@ function GameContainerInner({
       // Reset the game state (but keep the bet/mines values for reusing).
       try {
         const result = await mutateAsync({
-          sessionId: session ?? mode,
+          sessionId: gameSession.data?.sessionId ?? mode,
         });
 
         if (session) {
@@ -277,6 +280,7 @@ function GameContainerInner({
         onBombHit={handleBombHit}
         mode={mode}
         sessionId={session ?? mode}
+        gameSessionId={gameSession.data?.sessionId}
       />
       <BetPanel
         session={session ?? mode}

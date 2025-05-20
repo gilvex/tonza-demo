@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { GamePhase } from "./lib/types";
 import { useTRPC } from "@web/shared/trpc/client";
 import { convertServerGrid } from "./lib/helper";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMobuleWebhook } from "../hooks/useMobuleWebhook";
 
 export interface Cell {
@@ -28,7 +28,8 @@ export interface MineGameProps {
   onGameStart?: () => void;
   onBombHit?: () => void;
   onGemClick?: () => void;
-  mode?: 'demo' | 'real';
+  mode?: "demo" | "real";
+  gameSessionId?: string;
 }
 
 export function MineGame({
@@ -42,7 +43,8 @@ export function MineGame({
   onGameStart,
   onBombHit,
   onGemClick,
-  mode = 'demo'
+  mode = "demo",
+  gameSessionId,
 }: MineGameProps) {
   const gridSize = 5; // 5x5 grid
   const { checkSession } = useMobuleWebhook({ session: sessionId });
@@ -50,9 +52,17 @@ export function MineGame({
   const [hasStarted, setHasStarted] = useState(false);
   // const [sessionId, setSessionId] = useState<string | null>(null);
   const api = useTRPC();
-  const { mutateAsync: revealCell } = useMutation(api.game.revealCell.mutationOptions());
-  const { mutateAsync: generateMines } = useMutation(api.game.generateMines.mutationOptions());
-  
+  const { mutateAsync: revealCell } = useMutation(
+    api.game.revealCell.mutationOptions()
+  );
+  const { mutateAsync: generateMines } = useMutation(
+    api.game.generateMines.mutationOptions()
+  );
+  const { refetch } = useQuery(
+    api.game.resumeSession.queryOptions({
+      userId: checkSession.data?.id_player ?? "",
+    })
+  );
   const [idleAnimationVariant, setIAV] = useState(
     Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
   );
@@ -65,7 +75,8 @@ export function MineGame({
 
     if (gamePhase !== "running") return;
     console.log(checkSession.data);
-    if (!checkSession.data?.id_player) return console.error("No player ID found");
+    if (!checkSession.data?.id_player)
+      return console.error("No player ID found");
 
     // Initialize game with server
     generateMines({
@@ -74,12 +85,14 @@ export function MineGame({
       rows: gridSize,
       cols: gridSize,
       mines,
-      backspin: false
-    }).then(result => {
+      backspin: false,
+    }).then((result) => {
       // setSessionId(result.sessionId);
+      refetch();
+      setGameover(false);
       setGrid(convertServerGrid(result.grid));
     });
-  }, [gamePhase, generateMines, mines, setGrid, sessionId, checkSession.data?.id_player]);
+  }, [gamePhase, generateMines, mines, setGrid, sessionId, checkSession.data]);
 
   const handleCellClick = async (index: number) => {
     if (isGameover || !sessionId) return;
@@ -94,26 +107,26 @@ export function MineGame({
 
     try {
       const result = await revealCell({
-        sessionId,
+        sessionId: gameSessionId ?? sessionId,
         row,
-        col
+        col,
       });
 
       setGrid(convertServerGrid(result.grid));
 
-      if (result.status === 'failure') {
+      if (result.status === "failure") {
         setGameover(true);
         onBombHit && onBombHit();
       } else {
         onGemClick && onGemClick();
       }
 
-      if (result.status === 'fullwin') {
+      if (result.status === "fullwin") {
         // Handle win condition
         setGameover(true);
       }
     } catch (error) {
-      console.error('Error revealing cell:', error);
+      console.error("Error revealing cell:", error);
     }
   };
 
@@ -198,7 +211,7 @@ export function MineGame({
                 <p className="text-xl">
                   {gamePhase === "result:lose"
                     ? "You lose"
-                    : `You win: ${(betAmount * currentMultiplier).toFixed(2)} ${mode === 'real' ? 'USD' : 'Demo'}`}
+                    : `You win: ${(betAmount * currentMultiplier).toFixed(2)} ${mode === "real" ? "USD" : "Demo"}`}
                 </p>
               </div>
             </motion.div>
