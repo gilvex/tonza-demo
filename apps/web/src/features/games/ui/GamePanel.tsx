@@ -17,7 +17,7 @@ interface GamePanelProps {
   multipliers: Multiplier[];
   betAmount: number;
   currentMultiplier: number;
-  onGemClick: () => void;
+  onGemClick: (index: number) => void;
   onBombHit: () => void;
   mode?: 'demo' | 'real';
   sessionId: string;
@@ -52,7 +52,7 @@ function GamePanelInner({
   };
 
   const handleBombHitInternal = () => {
-    setGamePhase("bombed");
+    // setGamePhase("bombed");
     onBombHit();
   };
 

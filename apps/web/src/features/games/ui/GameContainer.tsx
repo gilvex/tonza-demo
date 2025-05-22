@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
@@ -7,22 +8,20 @@ import { BetPanel } from "../mines/ui/BetPanel";
 import { GamePhase } from "../mines/lib/types";
 import { Cell } from "../mines";
 import { convertServerGrid } from "../mines/lib/helper";
-import { useMutation, useQuery, UseQueryResult } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@web/shared/trpc/client";
 import { GamePanel } from "./GamePanel";
 import { useMobuleWebhook } from "../hooks/useMobuleWebhook";
+import { GameProvider } from "../context/GameContext";
 
 export interface GameContainerProps {
   mode?: "demo" | "real";
   session?: string | null;
-  currency?: string | null;
-  lang?: string | null;
-  userBalance?: UseQueryResult<{ balance: number }, Error>;
   demoBalance?: number;
   updateDemoBalance?: (balance: number) => void;
+  lastUnfinishedGame?: any;
 }
 
-// Dynamically import components that use TRPC to ensure they only load on client
 const DynamicGameContainer = dynamic(
   () => Promise.resolve(GameContainerInner),
   {
@@ -30,69 +29,139 @@ const DynamicGameContainer = dynamic(
   }
 );
 
-export function GameContainer({
-  mode = "demo",
-  session,
-  currency = "USD",
-  lang = "en",
-  userBalance,
-  demoBalance,
-  updateDemoBalance,
-}: GameContainerProps) {
+export function GameContainer(props: GameContainerProps) {
   return (
-    <DynamicGameContainer
-      {...{
-        mode,
-        session,
-        currency,
-        lang,
-        userBalance,
-        demoBalance,
-        updateDemoBalance,
-      }}
-    />
+    <GameProvider>
+      <DynamicGameContainer {...props} />
+    </GameProvider>
   );
 }
 
 function GameContainerInner({
   mode = "demo",
   session,
-  currency,
-  lang,
-  userBalance,
   demoBalance,
   updateDemoBalance,
+  lastUnfinishedGame,
 }: GameContainerProps) {
-  const { depositWin, withdrawBet, checkSession } = useMobuleWebhook({
-    session,
-    currency,
-  });
+  const { checkSession, checkBalance } = useMobuleWebhook({ session, currency: "USD" });
   const api = useTRPC();
-  const { mutateAsync } = useMutation(api.game.takeOut.mutationOptions());
-  // These states will persist even after a game is finished.
+  const userId = checkSession.data?.id_player;
+  // console.log("userId", userId);
+  // State for game
+  const [gameId, setGameId] = useState<string | null>(null);
   const [betAmount, setBetAmount] = useState<number>(0);
-  const [mines, setMines] = useState<number>(1);
+  const [mines, setMines] = useState<number>(lastUnfinishedGame.data?.mines || 1);
   const [currentMultiplier, setCurrentMultiplier] = useState<number>(0);
   const [grid, setGrid] = useState<Cell[]>([]);
-  
-  const gameSession = useQuery(api.game.resumeSession.queryOptions({ userId: checkSession.data?.id_player ?? "" }))
+  const [gamePhase, setGamePhase] = useState<GamePhase>("initial");
+  const [multipliers, setMultipliers] = useState(() =>
+    updateMultipliers(mines)
+  );
 
-  const updateMultipliers = (mines: number) => {
-    // We'll allow up to 6 multiplier boxes (or fewer if there are very many mines)
+
+  const allowToBet = useMutation(api.game.allowToBet.mutationOptions());
+  // const revealCell = useMutation(api.game.revealCell.mutationOptions());
+  const cashOut = useMutation(api.game.cashOut.mutationOptions());
+
+  // When last game loads, set state
+  useEffect(() => {
+    const lastGame = lastUnfinishedGame.data;
+    if (lastGame && lastGame.grid) {
+      // console.log("lastGame", lastGame, convertServerGrid(lastGame.grid));
+      setGameId(lastGame.id);
+      setGrid(convertServerGrid(lastGame.grid));
+      setGamePhase(
+        lastGame.state === "AWAITING_FIRST_INPUT"
+          ? "running"
+          : lastGame.state === "CASH_OUT_AVAILABLE"
+            ? "cashOut"
+            : lastGame.state === "VICTORY"
+              ? "result:win"
+              : lastGame.state === "LOSE"
+                ? "result:lose"
+                : "initial"
+      );
+      setMines(lastGame.mines);
+    }
+  }, [lastUnfinishedGame.data]);
+
+  // Update multipliers when mines or phase changes
+  useEffect(() => {
+    if (!gamePhase.includes("result")) {
+      setMultipliers(updateMultipliers(mines));
+    }
+  }, [gamePhase, mines]);
+
+  // Place bet (start new game)
+  const handlePlaceBet = async (bet: number) => {
+    if (!userId) return;
+    setBetAmount(bet);
+    const result = await allowToBet.mutateAsync({
+      userId,
+      rows: 5,
+      cols: 5,
+      mines,
+    });
+    setGameId(result.id);
+    setGrid(convertServerGrid(result.grid));
+    setGamePhase("running");
+    // lastGameQuery.refetch();
+  };
+
+  // Reveal a cell
+  const handleRevealCell = async (index: number) => {
+    if (!gameId || !userId) return;
+    const row = Math.floor(index / 5);
+    const col = index % 5;
+    
+    // Count revealed gems in current grid
+    const revealedGems = grid.filter(cell => cell.isGem && cell.isRevealed).length;
+    const totalPossibleGems = 25 - mines;
+    
+    if (revealedGems === totalPossibleGems) {
+      setGamePhase("result:win");
+    } else {
+      setGamePhase("cashOut");
+    }
+    // if (!gameId || !userId) return;
+    // const row = Math.floor(index / 5);
+    // const col = index % 5;
+    // console.log("revealing cell", row, col);
+    // const result = await revealCell.mutateAsync({ gameId, row, col });
+    // setGrid(convertServerGrid(result.grid));
+    // if (result.state === "VICTORY") {
+    //   setGamePhase("result:win");
+    // } else if (result.state === "LOSE") {
+    //   setGamePhase("result:lose");
+    // } else if (result.state === "CASH_OUT_AVAILABLE") {
+    //   setGamePhase("cashOut");
+    // }
+    // lastGameQuery.refetch();
+  };
+
+  // Cash out
+  const handleCashOut = async () => {
+    if (!gameId || !userId) return;
+    const result = await cashOut.mutateAsync({ gameId });
+    setGrid(convertServerGrid(result.grid));
+    setGamePhase("result:win");
+    // lastGameQuery.refetch();
+  };
+
+  // Mines select
+  const handleMinesSelect = (minesCount: number) => {
+    setMines(minesCount);
+  };
+
+  // Multiplier logic
+  function updateMultipliers(mines: number) {
     const multiplierCount = 25 - mines;
-
     return Array.from({ length: multiplierCount }, (_, i) => {
-      // Calculate probability of winning for this step
-      // Total cells = 25
-      // Remaining safe cells = 25 - mines - i (i is the number of gems already revealed)
-      // Probability = (remaining safe cells) / (total cells - i)
       const remainingSafeCells = 25 - mines - i;
       const remainingCells = 25 - i;
       const probability = remainingSafeCells / remainingCells;
-
-      // Multiplier is the inverse of probability
       const factor = 1 / probability;
-
       return {
         value: `${factor.toFixed(2)}x`,
         factor,
@@ -101,168 +170,32 @@ function GameContainerInner({
         growColor: "#1B265C",
       };
     });
-  };
+  }
 
-  const [multipliers, setMultiplies] = useState(updateMultipliers(mines));
-  const [gamePhase, setGamePhase] = useState<GamePhase>("initial");
-
-  useEffect(() => {
-    console.log("Game session data:", gameSession.data);
-    if (gameSession.data?.grid) {
-      setGrid(convertServerGrid(gameSession.data.grid));
-      setGamePhase(gameSession.data.status as GamePhase);
-    }
-  }, [gameSession.data]);
-
-  useEffect(() => {
-    if (!gamePhase.includes("result")) {
-      setMultiplies(updateMultipliers(mines));
-    }
-  }, [gamePhase, mines]);
-  // Game phase controls which components (and button text) to show:
-  // - "initial": show BetPanel (to enter bet/mines)
-  // - "running": game is live and waiting for a cell selection
-  // - "cashOut": a safe cell was hit; dynamic button now acts as cash-out trigger
-  // - "bombed": a bomb was hit; game ends
-
-  const [roundCounter, setRoundCounter] = useState(0);
-  useEffect(() => {
-    if (gamePhase === "initial") {
-      setRoundCounter((prev) => prev + 1);
-    }
-  }, [gamePhase]);
-  const round_id = `session:${session ?? mode}:${roundCounter}`;
-  const trx_id = `session:${session ?? mode}:round_${roundCounter}:trx_`;
-
-  const handleMinesSelect = (minesCount: number) => {
-    setMines(minesCount);
-  };
-  // This callback is passed into BetPanel. It is called when the user clicks its Place Bet button.
-  // (You cannot change BetPanel's code, so we use this as our "placeholder" to start the game.)
-  const handlePlaceBet = async (bet: number) => {
-    if (mode !== "demo") {
-      await withdrawBet.mutateAsync({
-        amount: bet * 100,
-        trx_id: `${trx_id}_bet`,
-        round_id,
-      });
-    } else {
-      updateDemoBalance?.(demoBalance ? demoBalance - bet : 0);
-    }
-
-    if (userBalance && "refetch" in userBalance) {
-      await userBalance.refetch();
-    }
-
-    setBetAmount(bet);
-    setGamePhase("running");
-  };
-
+  // Game finish
   const handleFinishGame = (state: "win" | "lose") => {
     setGamePhase(`result:${state}`);
-
     setTimeout(() => {
       setGamePhase("initial");
     }, 2000);
   };
 
-  // Called by GamePanel when a safe cell (gem) is revealed.
-  const handleGemClick = () => {
+  // Gem click
+  const handleGemClick = (index: number) => {
     if (gamePhase === "running") {
-      setGamePhase("cashOut");
+      handleRevealCell(index);
     }
-
-    setCurrentMultiplier(() => {
-      const newMultiplier =
-        multipliers.filter(({ factor }) => factor > currentMultiplier)[0]
-          ?.factor ?? multipliers[multipliers.length - 1].factor;
-
-      if (newMultiplier >= multipliers[multipliers.length - 1].factor) {
-        handleCashOut();
-      }
-
-      return newMultiplier;
-    });
   };
 
-  // Called by GamePanel when a bomb is hit.
-  const handleBombHit = async () => {
-    if (mode !== "demo") {
-      // const depositWinResult = await depositWin.mutateAsync({
-      //   amount: 0,
-      //   trx_id,
-      //   round_id,
-      // });
-      // console.log("Lose Deposit win result:", depositWinResult);
-    } else {
-      // updateDemoBalance?.(demoBalance ? demoBalance - betAmount : 0);
-    }
-
-    if (userBalance && "refetch" in userBalance) {
-      await userBalance.refetch();
-    }
-
-    setGamePhase("bombed");
-    // Wait a moment before resetting so the user can see the bomb state.
+  // Bomb hit
+  const handleBombHit = () => {
+    setGamePhase("result:lose");
     handleFinishGame("lose");
   };
 
-  // This dynamic action button is separate from BetPanel.
-  // In "running" phase it shows "Select the cell" (and does nothing on click).
-  // In "cashOut" phase it acts as the cash-out trigger.
-  const handleCashOut = async () => {
-    if (gamePhase === "cashOut") {
-      const earned = betAmount * currentMultiplier;
-      console.log("Earned amount:", earned, "USD");
-      // Reset the game state (but keep the bet/mines values for reusing).
-      try {
-        const result = await mutateAsync({
-          sessionId: gameSession.data?.sessionId ?? mode,
-        });
-
-        if (session) {
-          const depositWinResult = await depositWin.mutateAsync({
-            amount: earned * 100,
-            trx_id: `${trx_id}_win`,
-            round_id,
-          });
-          console.log("Take out result:", result, depositWinResult);
-        }
-
-        if (userBalance && "refetch" in userBalance) {
-          await userBalance.refetch();
-        }
-
-        if (mode === "demo") {
-          updateDemoBalance?.(
-            demoBalance ? demoBalance + Math.round(earned * 100) / 100 : 0
-          );
-        }
-
-        setGrid(convertServerGrid(result.grid));
-        handleFinishGame("win");
-      } catch (error) {
-        console.error("Error taking out:", error);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (gamePhase === "initial") {
-      setMultiplies((multiplies) =>
-        multiplies.map((multiplier) => ({
-          ...multiplier,
-          borderColor: "#1B265C",
-          backgroundColor: "transparent",
-          growColor: "#1B265C",
-        }))
-      );
-      setCurrentMultiplier(0);
-    }
-  }, [gamePhase]);
-
-  if (!session && mode !== "demo") {
-    return <div>No session</div>;
+  // UI rendering
+  if (!userId && mode !== "demo") {
+    return <div>No user</div>;
   }
 
   return (
@@ -279,11 +212,13 @@ function GameContainerInner({
         onGemClick={handleGemClick}
         onBombHit={handleBombHit}
         mode={mode}
-        sessionId={session ?? mode}
-        gameSessionId={gameSession.data?.sessionId}
+        sessionId={gameId ?? ""}
+        gameSessionId={gameId ?? ""}
       />
       <BetPanel
-        session={session ?? mode}
+        mode={mode}
+        session={session}
+        gameId={gameId ?? ""}
         gamePhase={gamePhase}
         initialBet={betAmount}
         mines={mines}
@@ -291,10 +226,6 @@ function GameContainerInner({
         onPlaceBet={handlePlaceBet}
         handleMinesSelect={handleMinesSelect}
         handleCashOut={handleCashOut}
-        currency={currency}
-        userBalance={
-          mode === "demo" ? { data: { balance: demoBalance! } } : userBalance
-        }
       />
     </div>
   );

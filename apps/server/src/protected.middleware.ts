@@ -6,28 +6,40 @@ import {
   MiddlewareResponse,
   TRPCMiddleware,
 } from 'nestjs-trpc';
-import { Inject, Injectable } from '@nestjs/common';
-import { UserService } from './user.service';
+import { Injectable } from '@nestjs/common';
+// import { UserService } from './user.service';
 // import { TRPCError } from '@trpc/server';
 
 @Injectable()
 export class ProtectedMiddleware implements TRPCMiddleware {
-  constructor(@Inject(UserService) private readonly userService: UserService) {}
+  // constructor(@Inject(UserService) private readonly userService: UserService) {}
+
   async use(opts: MiddlewareOptions<object>): Promise<MiddlewareResponse> {
-    const start = Date.now();
-    const result = await opts.next({
+    // Get userId from input
+    // console.log('opts', opts.input, opts.meta, opts.rawInput);
+    // const rawInput = opts.input as { userId?: string };
+    // const userId = rawInput?.userId;
+
+    // if (!userId) {
+    //   throw new TRPCError({
+    //     code: 'UNAUTHORIZED',
+    //     message: 'Missing userId in input',
+    //   });
+    // }
+
+    // const user = await this.userService.getUser(userId);
+    // if (!user) {
+    //   throw new TRPCError({
+    //     code: 'UNAUTHORIZED',
+    //     message: 'User not found',
+    //   });
+    // }
+
+    // Attach user to context for downstream use
+    return opts.next({
       ctx: {
-        ben: 1,
+        // user: { id: userId },
       },
     });
-
-    const durationMs = Date.now() - start;
-    const meta = { path: opts.path, type: opts.type, durationMs };
-    if (result.ok) {
-      console.log('OK request timing:', meta);
-    } else {
-      console.error('Non-OK request timing:', meta, 'Error:', result.error);
-    }
-    return result;
   }
 }

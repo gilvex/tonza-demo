@@ -5,11 +5,8 @@ import { useState, useEffect } from "react";
 import { cn } from "@web/lib/utils";
 import Image from "next/image";
 import { AnimatePresence, motion } from "motion/react";
-import { GamePhase } from "./lib/types";
-import { useTRPC } from "@web/shared/trpc/client";
-import { convertServerGrid } from "./lib/helper";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMobuleWebhook } from "../hooks/useMobuleWebhook";
+import { GameState, useRevealCell } from "../hooks/useGame";
+import { useGame } from "../hooks/useGame";
 
 export interface Cell {
   isBomb: boolean;
@@ -17,118 +14,14 @@ export interface Cell {
   isGem: boolean;
 }
 
-export interface MineGameProps {
-  grid: Cell[];
-  setGrid: (grid: Cell[]) => void;
-  mines: number;
-  betAmount: number;
-  currentMultiplier: number;
-  gamePhase: GamePhase;
-  sessionId: string;
-  onGameStart?: () => void;
-  onBombHit?: () => void;
-  onGemClick?: () => void;
-  mode?: "demo" | "real";
-  gameSessionId?: string;
-}
-
-export function MineGame({
-  grid,
-  setGrid,
-  mines,
-  betAmount,
-  currentMultiplier,
-  gamePhase,
-  sessionId,
-  onGameStart,
-  onBombHit,
-  onGemClick,
-  mode = "demo",
-  gameSessionId,
-}: MineGameProps) {
-  const gridSize = 5; // 5x5 grid
-  const { checkSession } = useMobuleWebhook({ session: sessionId });
-  const [isGameover, setGameover] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
-  // const [sessionId, setSessionId] = useState<string | null>(null);
-  const api = useTRPC();
-  const { mutateAsync: revealCell } = useMutation(
-    api.game.revealCell.mutationOptions()
-  );
-  const { mutateAsync: generateMines } = useMutation(
-    api.game.generateMines.mutationOptions()
-  );
-  const { refetch } = useQuery(
-    api.game.resumeSession.queryOptions({
-      userId: checkSession.data?.id_player ?? "",
-    })
-  );
+export function MineGame() {
   const [idleAnimationVariant, setIAV] = useState(
     Math.min(10, Math.max(1, Math.floor(Math.random() * 10)))
   );
 
-  useEffect(() => {
-    if (gamePhase === "initial") {
-      setGameover(false);
-      // setSessionId(null);
-    }
+  const { game, currentMultiplier, multipliers } = useGame();
 
-    if (gamePhase !== "running") return;
-    console.log(checkSession.data);
-    if (!checkSession.data?.id_player)
-      return console.error("No player ID found");
-
-    // Initialize game with server
-    generateMines({
-      userId: checkSession.data?.id_player,
-      sessionId,
-      rows: gridSize,
-      cols: gridSize,
-      mines,
-      backspin: false,
-    }).then((result) => {
-      // setSessionId(result.sessionId);
-      refetch();
-      setGameover(false);
-      setGrid(convertServerGrid(result.grid));
-    });
-  }, [gamePhase, generateMines, mines, setGrid, sessionId, checkSession.data]);
-
-  const handleCellClick = async (index: number) => {
-    if (isGameover || !sessionId) return;
-    if (!hasStarted) {
-      setHasStarted(true);
-      onGameStart && onGameStart();
-    }
-
-    // Convert index to row/col
-    const row = Math.floor(index / gridSize);
-    const col = index % gridSize;
-
-    try {
-      const result = await revealCell({
-        sessionId: gameSessionId ?? sessionId,
-        row,
-        col,
-      });
-
-      setGrid(convertServerGrid(result.grid));
-
-      if (result.status === "failure") {
-        setGameover(true);
-        onBombHit && onBombHit();
-      } else {
-        onGemClick && onGemClick();
-      }
-
-      if (result.status === "fullwin") {
-        // Handle win condition
-        setGameover(true);
-      }
-    } catch (error) {
-      console.error("Error revealing cell:", error);
-    }
-  };
+  const multiplier = multipliers[currentMultiplier];
 
   useEffect(() => {
     setTimeout(() => {
@@ -137,6 +30,10 @@ export function MineGame({
       );
     }, 60_000);
   }, [idleAnimationVariant]);
+
+  // useEffect(() => {
+  //   console.log("game grid in index.tsx", game?.grid);
+  // }, [game]);
 
   return (
     <>
@@ -152,66 +49,49 @@ export function MineGame({
         />} */}
 
       <div className="bg-[#01021E] mx-auto w-full max-w-sm lg:max-w-xl aspect-square rounded-2xl p-5 grid grid-cols-5 gap-2 relative">
-        {gamePhase === "initial"
+        {!game
           ? Array.from({ length: 25 }).map((_, index) => (
               <MineButton
                 id={index}
                 idleAnimationVariant={idleAnimationVariant}
                 key={index}
-                gamePhase={gamePhase}
-                isGameover={isGameover}
                 cell={{ isBomb: false, isGem: false, isRevealed: false }}
-                onClick={() => {}}
               />
             ))
-          : grid.map((cell, index) => (
-              <MineButton
-                key={index}
-                gamePhase={gamePhase}
-                cell={cell}
-                isGameover={isGameover}
-                onClick={() => handleCellClick(index)}
-              />
+          : game.grid.map((cell, index) => (
+              <MineButton key={index} cell={cell} id={index} />
             ))}
 
-        {/* {gamePhase === "running" && !isGameover && hasStarted && (
-          <button
-            onClick={handleTakeOut}
-            className="absolute -bottom-16 left-1/2 -translate-x-1/2 px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-lg"
-          >
-            Take Out
-          </button>
-        )} */}
-
         <AnimatePresence>
-          {gamePhase.includes("result") && (
+          {game && [GameState.VICTORY, GameState.LOSE].includes(game.state) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className={cn(
                 "absolute bg-[#1D1E2599] border backdrop-blur-md h-32 text-center rounded-xl left-0 right-0 top-0 bottom-0 m-auto",
-                gamePhase === "result:win" && "border-[#1ED80F] w-fit px-8",
-                gamePhase === "result:lose" && "border-[#FB2468] w-44"
+                game.state === GameState.VICTORY &&
+                  "border-[#1ED80F] w-fit px-8",
+                game.state === GameState.LOSE && "border-[#FB2468] w-44"
               )}
             >
               <div className="h-full w-full flex flex-col gap-2 justify-center items-center font-bold">
                 <p
                   className={cn(
                     "text-4xl",
-                    gamePhase === "result:lose"
+                    game.state === GameState.LOSE
                       ? "text-[#FB2468]"
                       : "text-[#1ED80F]"
                   )}
                 >
-                  {gamePhase === "result:lose"
+                  {game.state === GameState.LOSE
                     ? "0x"
-                    : `${currentMultiplier.toFixed(2)}x`}
+                    : multiplier.value}
                 </p>
                 <p className="text-xl">
-                  {gamePhase === "result:lose"
+                  {game.state === GameState.LOSE
                     ? "You lose"
-                    : `You win: ${(betAmount * currentMultiplier).toFixed(2)} ${mode === "real" ? "USD" : "Demo"}`}
+                    : `You win: ${(game.betAmount * multiplier.factor).toFixed(2)} USD`}
                 </p>
               </div>
             </motion.div>
@@ -225,20 +105,16 @@ export function MineGame({
 interface MineButtonProps {
   id?: number;
   idleAnimationVariant?: number;
-  gamePhase: GamePhase;
   cell: Cell;
-  isGameover: boolean;
-  onClick: () => void;
 }
 
 export function MineButton({
   id = -1,
   idleAnimationVariant = 7,
-  gamePhase,
   cell,
-  isGameover,
-  onClick,
 }: MineButtonProps) {
+  const { game } = useGame();
+  const { revealCell } = useRevealCell({ cellId: id });
   const [isPressed, setIsPressed] = useState(false);
   const [isCancelled, setIsCancelled] = useState(false);
 
@@ -246,7 +122,7 @@ export function MineButton({
     const handleMouseUp = () => {
       if (isPressed && !isCancelled) {
         setIsPressed(false);
-        onClick();
+        revealCell();
       } else {
         setIsPressed(false);
       }
@@ -255,7 +131,7 @@ export function MineButton({
     return () => {
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isPressed, isCancelled, onClick]);
+  }, [isPressed, isCancelled, revealCell]);
 
   // Calculate our base HSL values.
   const saturation = 70;
@@ -284,10 +160,9 @@ export function MineButton({
   return (
     <motion.button
       disabled={
-        gamePhase === "initial" ||
-        gamePhase.includes("result") ||
-        cell.isRevealed ||
-        isGameover
+        !game ||
+        [GameState.VICTORY, GameState.LOSE].includes(game.state) ||
+        cell.isRevealed
       }
       onMouseDown={() => {
         setIsPressed(true);
@@ -298,21 +173,18 @@ export function MineButton({
       }}
       className={cn(
         `relative w-full aspect-[1/0.85] rounded-lg bg-blue-600 flex items-center justify-center overflow-hidden`,
-        cell.isRevealed || isGameover
+        cell.isRevealed
           ? cell.isBomb
             ? "bg-[#01021E] border-2 border-[#FB2468] !shadow-[0px_8px_0px_0px_rgba(251,36,104,0.44),inset_0_0_10px_5px_rgba(251,36,104,0.6)]"
             : "bg-[#183934] border-2 border-[#1ED80F] !shadow-[0px_8px_0px_0px_rgba(30,216,15,0.68),inset_0_0_10px_5px_rgba(30,216,15,0.6)]"
           : "",
-        isGameover && !cell.isRevealed ? "!opacity-40 pointer-events-none" : "",
-        gamePhase === "initial"
-          ? `hover:cursor-default animate-pulse duration-[2s]`
-          : ""
+        cell.isRevealed ? "!opacity-40 pointer-events-none" : "",
+        !game ? `hover:cursor-default animate-pulse duration-[2s]` : ""
       )}
       animate={{
-        animationDelay:
-          gamePhase === "initial"
-            ? `${Math.min(id / idleAnimationVariant, 25)}s`
-            : "0",
+        animationDelay: !game
+          ? `${Math.min(id / idleAnimationVariant, 25)}s`
+          : "0",
         backgroundColor: rainbowMode ? rainbowColors : staticBackgroundColor,
         boxShadow: rainbowMode
           ? shadowColors
@@ -344,7 +216,7 @@ export function MineButton({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{
-          opacity: (isGameover || cell.isRevealed) && cell.isGem ? 1 : 0,
+          opacity: cell.isGem ? 1 : 0,
         }}
         className="absolute inset-0 flex items-center justify-center p-[20%]"
       >
@@ -360,7 +232,7 @@ export function MineButton({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{
-          opacity: (isGameover || cell.isRevealed) && cell.isBomb ? 1 : 0,
+          opacity: cell.isBomb ? 1 : 0,
         }}
         className="absolute inset-0 flex items-center justify-center p-[20%]"
       >
@@ -375,7 +247,7 @@ export function MineButton({
       </motion.div>
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: !isGameover && !cell.isRevealed ? 1 : 0 }}
+        animate={{ opacity: !cell.isRevealed ? 1 : 0 }}
         className="flex justify-center items-center"
       >
         <div

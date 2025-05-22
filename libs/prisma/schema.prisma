@@ -22,11 +22,27 @@ datasource db {
 //   authorId  Int?
 // }
 
-model Session {
-  id         String   @id @default(uuid())
-  userId     String
-  sessionId  String   @unique
-  state      Json
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+enum GameState {
+  AWAITING_FIRST_INPUT
+  LOSE
+  CASH_OUT_AVAILABLE
+  VICTORY
+  FINISHED
 }
+
+/// Grid structure: Array of rows, where each row is an array of cells
+/// Each cell has the structure: { value: 'bomb' | 'gem', revealed: boolean }
+model Game {
+  id         String     @id @default(uuid())
+  userId     String
+  roundId    String     @default(uuid())
+  grid       Json       /// Type: { value: 'bomb' | 'gem', revealed: boolean }[][]
+  state      GameState
+  betTRXId   String     @default(uuid())
+  winTRXId   String     @default(uuid())
+  createdAt  DateTime   @default(now())
+  mines      Int
+  updatedAt  DateTime   @updatedAt
+  betAmount  Float
+}
+

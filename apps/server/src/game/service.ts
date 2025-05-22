@@ -1,226 +1,209 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/require-await */
+
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@server/prisma.service';
+import { GameState } from '@prisma/client';
 
 @Injectable()
 export class Service {
   constructor(private prisma: PrismaService) {}
 
-  // Generate a new mines grid and create a session
-  async generateMines({
+  // Create a new game
+  async createGame({
     userId,
-    sessionId,
     rows,
     cols,
     mines,
-    backspin,
+    betAmount,
+    session,
   }: {
     userId: string;
-    sessionId: string;
     rows: number;
     cols: number;
     mines: number;
-    backspin?: boolean;
+    betAmount: number;
+    session: string;
   }) {
-    const grid: { value: 'bomb' | 'success'; revealed: boolean }[][] =
-      Array.from({ length: rows }, () =>
-        Array.from({ length: cols }, () => ({
-          value: 'success',
-          revealed: false,
-        })),
-      );
-
-    if (!backspin) {
-      const total = rows * cols;
-      const cells = Array(total).fill('success');
-      for (let i = 0; i < mines; i++) cells[i] = 'bomb';
-      for (let i = cells.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [cells[i], cells[j]] = [cells[j], cells[i]];
-      }
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          grid[r][c].value = cells[r * cols + c] as 'bomb' | 'success';
-        }
-      }
-    }
-
-    const session = await this.prisma.session.upsert({
-      where: { sessionId: sessionId },
-      update: {
-        state: { grid, backspin: !!backspin, status: 'awaiting first input' },
-      },
-      create: {
-        userId: userId,
-        sessionId: sessionId,
-        state: { grid, backspin: !!backspin, status: 'awaiting first input' },
+    const grid = this.generateInitialGrid(rows, cols, mines);
+    const game = await this.prisma.game.create({
+      data: {
+        userId,
+        grid,
+        state: GameState.AWAITING_FIRST_INPUT,
+        mines,
+        betAmount,
       },
     });
 
+    const response = await fetch(
+      `${process.env.CENTRAL_API}/api/mobule/withdraw.bet`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session: session,
+          'game.provider': 'tonza',
+          currency: 'USD',
+          amount: game.betAmount,
+          round_id: game.roundId,
+          trx_id: game.betTRXId,
+        }),
+      },
+    );
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error('Failed to process bet with Mobule');
+    }
+
     return {
-      sessionId: session.id,
+      ...game,
       grid: this.getRevealedGrid(grid),
-      status: 'awaiting first input',
     };
   }
 
   // Reveal a cell and update the game state
-  async revealCell(sessionId: string, row: number, col: number) {
-    console.log('Revealing cell:', { sessionId, row, col });
-    const session = (await this.prisma.session.findUnique({
-      where: { sessionId: sessionId },
-    })) as {
-      id: string;
-      state: {
-        grid: { value: 'bomb' | 'success'; revealed: boolean }[][];
-        backspin: boolean;
-        status: string;
-      } | null;
-    };
+  async revealCell(gameId: string, row: number, col: number) {
+    const game = await this.prisma.game.findUnique({ where: { id: gameId } });
+    if (!game) throw new Error('Game not found');
+    const grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
 
-    if (!session) throw new Error('Session not found');
-    if (!session.state) throw new Error('Session state is null');
-
-    const { grid, backspin, status } = session.state;
-
-    if (status === 'failure' || status === 'fullwin') {
-      throw new Error('Game has already ended');
-    }
-
-    if (grid[row][col].revealed) throw new Error('Cell already revealed');
+    if (grid[row][col]?.revealed) throw new Error('Cell already revealed');
     grid[row][col].revealed = true;
-
-    if (backspin) {
-      if (grid[row][col].value === 'bomb') {
-        // Replace bomb with success in backspin mode
-        grid[row][col].value = 'success';
-      }
-
+    let newState = game.state;
+    if (grid[row][col].value === 'bomb') {
+      newState = GameState.LOSE;
+    } else {
       const allSafeCellsRevealed = grid.every((r) =>
         r.every((cell) => cell.value === 'bomb' || cell.revealed),
       );
       if (allSafeCellsRevealed) {
-        session.state.status = 'fullwin';
+        newState = GameState.VICTORY;
       } else {
-        session.state.status = 'success';
-      }
-    } else {
-      if (grid[row][col].value === 'bomb') {
-        session.state.status = 'failure';
-      } else {
-        const allSafeCellsRevealed = grid.every((r) =>
-          r.every((cell) => cell.value === 'bomb' || cell.revealed),
-        );
-        if (allSafeCellsRevealed) {
-          session.state.status = 'fullwin';
-        } else {
-          session.state.status = 'success';
-        }
+        newState = GameState.CASH_OUT_AVAILABLE;
       }
     }
-
-    await this.prisma.session.update({
-      where: { sessionId: sessionId },
-      data: { state: { grid, backspin, status: session.state.status } },
+    await this.prisma.game.update({
+      where: { id: gameId },
+      data: { grid, state: newState },
     });
-
     return {
-      sessionId: session.id,
-      grid: this.getRevealedGrid(
-        grid,
-        ['failure', 'fullwin'].includes(session.state.status),
-      ),
-      status: session.state.status,
+      gameId: game.id,
+      grid: this.getRevealedGrid(grid),
+      state: newState,
     };
   }
 
-  async takeOut(sessionId: string) {
-    const session = (await this.prisma.session.findUnique({
-      where: { sessionId: sessionId },
-    })) as {
-      id: string;
-      state: {
-        grid: { value: 'bomb' | 'success'; revealed: boolean }[][];
-        backspin: boolean;
-        status: string;
-      } | null;
-    };
-
-    if (!session) throw new Error('Session not found');
-    if (!session.state) throw new Error('Session state is null');
-
-    const { grid, backspin } = session.state;
-
-    if (backspin) {
-      // Reveal unclicked cells as bombs up to the possible mines count
-      let remainingMines = grid
-        .flat()
-        .filter((cell) => cell.value === 'bomb').length;
-      for (const row of grid) {
-        for (const cell of row) {
-          if (!cell.revealed && remainingMines > 0) {
-            cell.value = 'bomb';
-            cell.revealed = true;
-            remainingMines--;
-          }
-        }
+  // Cash out (end the game with a win if not already lost)
+  async cashOut(gameId: string, session: string) {
+    const game = await this.prisma.game.findUnique({ where: { id: gameId } });
+    if (!game) throw new Error('Game not found');
+    if (game.state === GameState.LOSE || game.state === GameState.VICTORY) {
+      throw new Error('Game already ended');
+    }
+    const grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
+    // Reveal all cells
+    for (const row of grid) {
+      for (const cell of row) {
+        cell.revealed = true;
       }
     }
-
-    session.state.status = 'success';
-
-    await this.prisma.session.update({
-      where: { sessionId: sessionId },
-      data: { state: session.state },
+    await this.prisma.game.update({
+      where: { id: gameId },
+      data: { grid, state: GameState.VICTORY },
     });
 
+    const response = await fetch(
+      `${process.env.CENTRAL_API}/api/mobule/deposit.win`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session: session,
+          'game.provider': 'tonza',
+          currency: 'USD',
+          amount: game.betAmount,
+          round_id: game.roundId,
+          trx_id: game.winTRXId,
+        }),
+      },
+    );
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error('Failed to process win with Mobule');
+    }
+
     return {
-      sessionId: session.id,
-      grid: this.getRevealedGrid(session.state.grid, true),
-      status: session.state.status,
+      gameId: game.id,
+      grid: this.getRevealedGrid(grid, true),
+      state: GameState.VICTORY,
     };
   }
 
-  // Resume a session by sessionId
-  async resumeSession(userId: string) {
-    const sessions = await this.prisma.session.findMany({
-      where: { userId: userId },
+  // Load the last game for a user
+  async loadLastGame(userId: string) {
+    return this.prisma.game.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
     });
+  }
 
-    type SessionState = {
-      grid: { value: 'bomb' | 'success'; revealed: boolean }[][];
-      backspin: boolean;
-      status: string;
-    } | null;
-
-    const session = sessions.find((s) => {
-      const state = s.state as SessionState;
-      return state && state.status !== 'failure' && state.status !== 'fullwin';
-    });
-
-    if (!session) {
+  async getLastUnfinishedGame(userId: string) {
+    const lastGame = await this.loadLastGame(userId);
+    if (!lastGame || !this.isGameUnfinished(lastGame)) {
       return null;
     }
-    if (!session.state) throw new Error('Session state is null');
-
-    const state = session.state as SessionState;
-
     return {
-      sessionId: session.sessionId,
-      grid: this.getRevealedGrid(state!.grid),
-      status: state!.status,
+      ...lastGame,
+      grid: this.getRevealedGrid(
+        lastGame.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][],
+      ),
     };
   }
+  // Check if a game is unfinished
+  isGameUnfinished(game: any) {
+    return [
+      GameState.AWAITING_FIRST_INPUT,
+      GameState.CASH_OUT_AVAILABLE,
+    ].includes(game.state);
+  }
 
-  // Helper method to return only revealed cells
+  // Helper: generate initial grid
+  private generateInitialGrid(rows: number, cols: number, mines: number) {
+    const grid: { value: 'bomb' | 'gem'; revealed: boolean }[][] = Array.from(
+      { length: rows },
+      () =>
+        Array.from({ length: cols }, () => ({ value: 'gem', revealed: false })),
+    );
+    const total = rows * cols;
+    const cells = Array(total).fill('gem');
+    for (let i = 0; i <= mines; i++) cells[i] = 'bomb';
+    for (let i = cells.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [cells[i], cells[j]] = [cells[j], cells[i]];
+    }
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        grid[r][c].value = cells[r * cols + c] as 'bomb' | 'gem';
+      }
+    }
+    return grid;
+  }
+
+  // Helper: return only revealed cells
   private getRevealedGrid(
-    grid: { value: 'bomb' | 'success'; revealed: boolean }[][],
-    hideNone = false,
+    grid: { value: 'bomb' | 'gem'; revealed: boolean }[][],
+    revealAll = false,
   ) {
     return grid.map((row) =>
-      row.map((cell) => (cell.revealed || hideNone ? cell.value : 'hidden')),
+      row.map((cell) => (cell.revealed || revealAll ? cell.value : 'hidden')),
     );
   }
 }

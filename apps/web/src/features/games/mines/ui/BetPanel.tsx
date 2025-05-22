@@ -1,49 +1,36 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Button } from "@web/components/ui/button";
 import { Input } from "@web/components/ui/input";
 import { Slider } from "@web/components/ui/slider";
 import { cn } from "@web/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { GamePhase } from "../lib/types";
-import { UseQueryResult } from "@tanstack/react-query";
+import { useMobuleWebhook } from "../../hooks/useMobuleWebhook";
+import { GameState, useGame, useCashOut } from "../../hooks/useGame";
 // import { useMobuleWebhook } from "../../hooks/useMobuleWebhook";
 
-export interface BetPanelProps {
-  gamePhase: GamePhase;
-  currentMultiplier: number;
-  mines: number;
-  initialBet?: number;
-  onPlaceBet: (bet: number) => void;
-  handleMinesSelect: (mines: number) => void;
-  handleCashOut: () => void;
-  currency?: string | null;
-  userBalance?:
-    | UseQueryResult<{ balance: number }, Error>
-    | { data: { balance: number } };
-  session?: string | null;
-}
+export function BetPanel() {
+  const {
+    game,
+    session,
+    mode,
+    multipliers,
+    currentMultiplier,
+    createGame,
+    mines,
+    setMines,
+  } = useGame();
+  const { cashOut } = useCashOut();
+  const [betAmount, setBetAmount] = useState<number>(game?.betAmount || 0);
+  const displayCurrency = "USD";
 
-export function BetPanel({
-  gamePhase,
-  currentMultiplier,
-  mines,
-  initialBet = 0,
-  onPlaceBet,
-  handleMinesSelect,
-  handleCashOut,
-  currency = "USD",
-  userBalance: userBalanceQuery,
-  session,
-  // session
-}: BetPanelProps) {
-  const [betAmount, setBetAmount] = useState<number>(initialBet);
-  const displayCurrency = currency?.toLowerCase() || "usd";
-
-  const userBalanceValue = userBalanceQuery?.data?.balance || 0;
-  const userBalance =  userBalanceValue * (session === "demo" ? 100 : 1); // Assuming userBalance is in cents
+  const { checkBalance } = useMobuleWebhook({ session, currency: "USD" });
+  const userBalance =
+    mode === "demo"
+      ? (checkBalance.data?.balance || 0) * 100
+      : checkBalance.data?.balance || 0;
 
   const handleHalf = () =>
     setBetAmount((prev) => Math.round(Math.max(0, prev / 2)));
@@ -54,28 +41,27 @@ export function BetPanel({
   const handleDecrement = () =>
     setBetAmount((prev) => Math.round(Math.max(0, prev - 1)));
 
-  const handleSliderChange = (value: number[]) => {
-    // Assuming the slider returns an array of numbers
-    handleMinesSelect(value[0]);
-  };
+  useEffect(() => {
+    if (game) {
+      setBetAmount(game.betAmount);
+    }
+  }, [game]);
 
-  const handlePlaceBet = async () => {
-    onPlaceBet(betAmount);
-  };
+  const multiplier = multipliers[currentMultiplier];
 
   const betButtons = (
     <>
       <Button
         className="hover:bg-[#12182d]"
         onClick={handleHalf}
-        disabled={gamePhase !== "initial"}
+        disabled={!!game}
       >
         1/2
       </Button>
       <Button
         className="hover:bg-[#12182d]"
         onClick={handleDouble}
-        disabled={gamePhase !== "initial"}
+        disabled={!!game}
       >
         2x
       </Button>
@@ -83,16 +69,16 @@ export function BetPanel({
         <button
           onClick={handleIncrement}
           className={cn(
-            "hover:bg-[#12182d] w-full rounded-t-md h-full *:stroke-[4] hover:cursor-pointer"
+            "hover:bg-[#12182d] w-full rounded-t-md h-full *:stroke-[4] hover:cursor-pointer disabled:pointer-events-none disabled:opacity-50"
           )}
-          disabled={gamePhase !== "initial"}
+          disabled={!!game}
         >
           <ChevronUp className="w-full h-3" />
         </button>
         <button
           onClick={handleDecrement}
-          className="hover:bg-[#12182d] w-full rounded-b-md h-full *:stroke-[4] hover:cursor-pointer"
-          disabled={gamePhase !== "initial"}
+          className="hover:bg-[#12182d] w-full rounded-b-md h-full *:stroke-[4] hover:cursor-pointer disabled:pointer-events-none disabled:opacity-50"
+          disabled={!!game}
         >
           <ChevronDown className="w-full h-3" />
         </button>
@@ -127,18 +113,29 @@ export function BetPanel({
           />
           <span className="h-6 border border-[#2C376D]" />
           <Input
-            disabled={gamePhase !== "initial"}
+            disabled={!!game}
             className={cn(
               "border-none h-6 focus-visible:ring-0 px-0 lg:text-lg"
             )}
             type="number"
-            value={betAmount}
-            onChange={(e) =>
-              setBetAmount(
-                Math.round(Math.min(userBalance / 100, Number(e.target.value)))
-              )
-            }
-            onBlur={() => setBetAmount(Math.round(Math.max(0, betAmount)))}
+            value={betAmount.toString()}
+            onChange={(e) => {
+              const value = e.target.value;
+              // Allow empty input and decimal points
+              if (value === "" || value === ".") {
+                setBetAmount(0);
+                return;
+              }
+              // Parse as float and handle leading zeros
+              const numValue = parseFloat(value);
+              if (!isNaN(numValue)) {
+                setBetAmount(Math.min(userBalance / 100, numValue));
+              }
+            }}
+            // onBlur={() => {
+            //   // Ensure minimum value of 0 and round to 2 decimal places
+            //   setBetAmount(Math.max(0, Number(betAmount.toFixed(2))));
+            // }}
           />
           <div
             className={cn(
@@ -166,13 +163,14 @@ export function BetPanel({
         <div className="bg-[#01021E] flex items-center gap-2 px-4 py-3 rounded-xl border border-[#1A2340] h-10 lg:h-16">
           <p className="font-bold">{mines}</p>
           <Slider
-            disabled={gamePhase !== "initial"}
+            disabled={!!game}
             defaultValue={[mines]}
             min={1}
             max={24}
             step={1}
-            onValueChange={handleSliderChange}
-            className={gamePhase !== "initial" ? "animate-pulse" : ""}
+            value={[mines]}
+            onValueChange={(value) => setMines(value[0])}
+            className={!!game ? "animate-pulse" : ""}
             rangeClassName={cn(
               "transition-colors duration-1000",
               mines > 20 && "from-[#FB2468] to-[#f4477e]"
@@ -188,30 +186,39 @@ export function BetPanel({
           className={cn(
             "from-[#85DAFF] to-60% font-bold to-[#5991FE] bg-gradient-to-br hover:bg-[#161f4b] w-full lg:h-16 lg:text-xl",
             betAmount <= 0 && "opacity-50 cursor-not-allowed",
-            gamePhase === "initial" && betAmount > 0 && "hover:cursor-pointer",
-            gamePhase === "running" &&
+            !game && "hover:cursor-pointer",
+            game?.state === GameState.AWAITING_FIRST_INPUT &&
               "bg-[#1B265C] text-white hover:bg-[#161f4b]",
-            (gamePhase === "cashOut" || gamePhase === "result:win") &&
+            (game?.state === GameState.CASH_OUT_AVAILABLE ||
+              game?.state === GameState.VICTORY) &&
               "bg-[#24FBB3] text-[#01021E] hover:bg-[#53ffdd]",
-            (gamePhase === "bombed" || gamePhase === "result:lose") &&
+            (game?.state === GameState.LOSE ||
+              game?.state === GameState.FINISHED) &&
               "bg-[#FB2468] hover:bg-[#FB2468] text-white hover:cursor-default"
           )}
           onClick={
-            gamePhase === "cashOut"
-              ? handleCashOut
-              : gamePhase === "initial" && betAmount > 0
-                ? handlePlaceBet
+            game?.state === GameState.CASH_OUT_AVAILABLE
+              ? () => cashOut()
+              : !game && betAmount > 0
+                ? () => createGame(mines, betAmount) // handlePlaceBet
                 : () => {}
           }
+          disabled={
+            game
+              ? [
+                  GameState.AWAITING_FIRST_INPUT,
+                  GameState.VICTORY,
+                  GameState.LOSE,
+                ].includes(game?.state)
+              : false
+          }
         >
-          {gamePhase === "initial" &&
-            `Place bet ${betAmount} ${displayCurrency.toUpperCase()}`}
-          {gamePhase === "result:win" && `🎊`}
-          {gamePhase === "result:lose" && `💣`}
-          {gamePhase === "running" && "Select the cell"}
-          {gamePhase === "cashOut" &&
-            `Take ${(betAmount * currentMultiplier).toFixed(2)} ${displayCurrency.toUpperCase()}`}
-          {gamePhase === "bombed" && "Bombed!"}
+          {!game && `Place bet ${betAmount} ${displayCurrency.toUpperCase()}`}
+          {game?.state === GameState.VICTORY && `🎊`}
+          {game?.state === GameState.LOSE && `💣`}
+          {game?.state === GameState.AWAITING_FIRST_INPUT && "Select the cell"}
+          {game?.state === GameState.CASH_OUT_AVAILABLE &&
+            `Take ${(betAmount * multiplier.factor).toFixed(2)} ${displayCurrency.toUpperCase()}`}
         </Button>
       </div>
     </div>
