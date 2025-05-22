@@ -48,7 +48,7 @@ export class Service {
           session: session,
           'game.provider': 'tonza',
           currency: 'USD',
-          amount: game.betAmount,
+          amount: game.betAmount * 100,
           round_id: game.roundId,
           trx_id: game.betTRXId,
         }),
@@ -56,7 +56,8 @@ export class Service {
     );
 
     const data = await response.json();
-    if (!data.success) {
+    if (data.status !== 200) {
+      console.error(data);
       throw new Error('Failed to process bet with Mobule');
     }
 
@@ -99,7 +100,7 @@ export class Service {
   }
 
   // Cash out (end the game with a win if not already lost)
-  async cashOut(gameId: string, session: string) {
+  async cashOut(gameId: string, session: string, multiplier: number) {
     const game = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!game) throw new Error('Game not found');
     if (game.state === GameState.LOSE || game.state === GameState.VICTORY) {
@@ -128,7 +129,7 @@ export class Service {
           session: session,
           'game.provider': 'tonza',
           currency: 'USD',
-          amount: game.betAmount,
+          amount: game.betAmount * 100 * multiplier,
           round_id: game.roundId,
           trx_id: game.winTRXId,
         }),
@@ -136,7 +137,8 @@ export class Service {
     );
 
     const data = await response.json();
-    if (!data.success) {
+    if (data.status !== 200) {
+      console.error(data);
       throw new Error('Failed to process win with Mobule');
     }
 

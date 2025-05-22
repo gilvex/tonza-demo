@@ -20,7 +20,7 @@ export function MineGame() {
   );
 
   const { game, currentMultiplier, multipliers } = useGame();
-
+  console.log("currentMultiplier", currentMultiplier);
   const multiplier = multipliers[currentMultiplier];
 
   useEffect(() => {
@@ -86,12 +86,12 @@ export function MineGame() {
                 >
                   {game.state === GameState.LOSE
                     ? "0x"
-                    : multiplier.value}
+                    : multiplier?.value}
                 </p>
                 <p className="text-xl">
                   {game.state === GameState.LOSE
                     ? "You lose"
-                    : `You win: ${(game.betAmount * multiplier.factor).toFixed(2)} USD`}
+                    : `You win: ${(game.betAmount * multiplier?.factor).toFixed(2)} USD`}
                 </p>
               </div>
             </motion.div>

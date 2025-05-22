@@ -18,8 +18,8 @@ export enum GameState {
 const calculateMultipliers = (mines: number): Multiplier[] => {
   const maxGems = 24 - mines; // Total cells minus mines
   return Array.from({ length: maxGems }, (_, i) => ({
-    value: `${(1 + ((1 + i) * (mines / (24 - mines)))).toFixed(2)}x`,
-    factor: Number((1 + ((1 + i) * (mines / (24 - mines)))).toFixed(2)),
+    value: `${(1 + (1 + i) * (mines / (24 - mines))).toFixed(2)}x`,
+    factor: Number((1 + (1 + i) * (mines / (24 - mines))).toFixed(2)),
     borderColor: "#1A2340",
     backgroundColor: "transparent",
     growColor: "#1A2340",
@@ -28,9 +28,17 @@ const calculateMultipliers = (mines: number): Multiplier[] => {
 
 export function useGame() {
   const api = useTRPC();
-  const { game, setGame, isLoading, setIsLoading, session, mode, mines, setMines } =
-    useGameContext();
-  const { checkSession } = useMobuleWebhook({
+  const {
+    game,
+    setGame,
+    isLoading,
+    setIsLoading,
+    session,
+    mode,
+    mines,
+    setMines,
+  } = useGameContext();
+  const { checkSession, checkBalance } = useMobuleWebhook({
     session,
   });
   const { mutateAsync: createGame } = useMutation(
@@ -75,7 +83,7 @@ export function useGame() {
       if (!session) {
         throw new Error("Session not found");
       }
-      
+
       setIsLoading(true);
       const result = await createGame({
         session,
@@ -86,6 +94,7 @@ export function useGame() {
         betAmount,
       });
       setGame(result);
+      await checkBalance.refetch();
       setIsLoading(false);
     },
     _setGame: setGame,
@@ -135,8 +144,9 @@ export function useRevealCell({ cellId }: { cellId: number }) {
 }
 
 export function useCashOut() {
-  const { game, setGame, session } = useGameContext();
+  const { game, _setGame, session, multipliers, currentMultiplier } = useGame();
   const api = useTRPC();
+  const { checkBalance } = useMobuleWebhook({ session, currency: "USD" });
   const { mutateAsync: cashOut } = useMutation(
     api.game.cashOut.mutationOptions()
   );
@@ -146,8 +156,16 @@ export function useCashOut() {
       if (!game || !session) {
         throw new Error("Game or session not found");
       }
-      const result = await cashOut({ gameId: game?.id, session });
-      setGame({ ...game, state: GameState.VICTORY });
+      const result = await cashOut({
+        gameId: game?.id,
+        session,
+        multiplier: multipliers[currentMultiplier].factor,
+      });
+      await checkBalance.refetch();
+      _setGame((game) => {
+        if (!game) return null;
+        return { ...game, state: GameState.VICTORY };
+      });
       return result;
     },
   };

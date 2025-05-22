@@ -111,7 +111,11 @@ export class Router {
 
   // Cash out
   @Mutation({
-    input: z.object({ gameId: z.string(), session: z.string() }),
+    input: z.object({
+      gameId: z.string(),
+      session: z.string(),
+      multiplier: z.number(),
+    }),
     output: z.object({
       gameId: z.string(),
       grid: z.array(z.array(z.string())),
@@ -119,9 +123,15 @@ export class Router {
     }),
   })
   @UseMiddlewares(ProtectedMiddleware)
-  async cashOut(@Input() input: { gameId: string; session: string }) {
+  async cashOut(
+    @Input() input: { gameId: string; session: string; multiplier: number },
+  ) {
     try {
-      return await this.service.cashOut(input.gameId, input.session);
+      return await this.service.cashOut(
+        input.gameId,
+        input.session,
+        input.multiplier,
+      );
     } catch (e) {
       throw new TRPCError({
         message: e.message || 'Failed to cash out',

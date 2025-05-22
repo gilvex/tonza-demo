@@ -93,7 +93,7 @@ export function BetPanel() {
         <div className="flex justify-between items-center">
           <p className="text-[#9EA8DD]">Bet Amount:</p>
           <div className="flex items-center gap-1">
-            <p className="text-[#9EA8DD]">Balance: {userBalance / 100}</p>
+            <p className="text-[#9EA8DD]">Balance: {checkBalance.isFetching ? "..." : userBalance / 100}</p>
             <Image
               src={`/${displayCurrency}.png`}
               alt={displayCurrency}
