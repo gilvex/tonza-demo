@@ -27,6 +27,7 @@ export class Router {
       mines: z.number(),
       betAmount: z.number(),
       session: z.string(),
+      mode: z.enum(['demo', 'real']),
     }),
     output: z.any(),
   })
@@ -40,6 +41,7 @@ export class Router {
       mines: number;
       betAmount: number;
       session: string;
+      mode?: 'demo' | 'real';
     },
   ) {
     try {
@@ -58,6 +60,9 @@ export class Router {
       gameId: z.string(),
       row: z.number(),
       col: z.number(),
+      multiplier: z.number(),
+      session: z.string(),
+      mode: z.enum(['demo', 'real']),
     }),
     output: z.object({
       gameId: z.string(),
@@ -67,10 +72,25 @@ export class Router {
   })
   @UseMiddlewares(ProtectedMiddleware)
   async revealCell(
-    @Input() input: { gameId: string; row: number; col: number },
+    @Input()
+    input: {
+      gameId: string;
+      row: number;
+      col: number;
+      multiplier: number;
+      session: string;
+      mode?: 'demo' | 'real';
+    },
   ) {
     try {
-      return await this.service.revealCell(input.gameId, input.row, input.col);
+      return await this.service.revealCell(
+        input.gameId,
+        input.row,
+        input.col,
+        input.multiplier,
+        input.session,
+        input.mode || 'real',
+      );
     } catch (e) {
       throw new TRPCError({
         message: e.message || 'Failed to reveal cell',
@@ -115,6 +135,7 @@ export class Router {
       gameId: z.string(),
       session: z.string(),
       multiplier: z.number(),
+      mode: z.enum(['demo', 'real']),
     }),
     output: z.object({
       gameId: z.string(),
@@ -124,13 +145,20 @@ export class Router {
   })
   @UseMiddlewares(ProtectedMiddleware)
   async cashOut(
-    @Input() input: { gameId: string; session: string; multiplier: number },
+    @Input()
+    input: {
+      gameId: string;
+      session: string;
+      multiplier: number;
+      mode?: 'demo' | 'real';
+    },
   ) {
     try {
       return await this.service.cashOut(
         input.gameId,
         input.session,
         input.multiplier,
+        input.mode || 'real',
       );
     } catch (e) {
       throw new TRPCError({

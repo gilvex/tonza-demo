@@ -1,4 +1,11 @@
-import { createContext, useContext, ReactNode, useState, SetStateAction, Dispatch } from "react";
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useState,
+  SetStateAction,
+  Dispatch,
+} from "react";
 import { GameState as GameStateType } from "../hooks/useGame";
 
 export interface GameState {
@@ -28,6 +35,8 @@ interface GameContextType {
   mode?: "demo" | "real";
   mines: number;
   setMines: Dispatch<SetStateAction<number>>;
+  mockBalance: number;
+  setMockBalance: Dispatch<SetStateAction<number>>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -43,11 +52,28 @@ export function GameProvider({
 }) {
   const [game, setGame] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [mines, setMines] = useState(1);  
+  const [mines, setMines] = useState(1);
+  const [mockBalance, setMockBalance] = useState<number>(100000); // Mock balance for demo mode
+
+  const sessionValue =
+    mode === "real"
+      ? session
+      : `${Math.random().toString(36).substring(2, 15)}`;
 
   return (
     <GameContext.Provider
-      value={{ game, setGame, isLoading, setIsLoading, session, mode, mines, setMines }}
+      value={{
+        game,
+        setGame,
+        isLoading,
+        setIsLoading,
+        session: sessionValue,
+        mode,
+        mines,
+        setMines,
+        mockBalance,
+        setMockBalance
+      }}
     >
       {children}
     </GameContext.Provider>

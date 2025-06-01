@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useGameContext } from "../context/GameContext";
 
 interface WebhookParams {
   session?: string | null;
@@ -6,12 +7,13 @@ interface WebhookParams {
   amount?: number;
   trx_id?: string;
   round_id?: string;
+  mode?: "demo" | "real";
 }
 
 export const useMobuleWebhook = (params: WebhookParams) => {
-  const { session, currency } = params;
-
-  // Check session
+  const { session, currency, mode } = params;
+const { setMockBalance, mockBalance } = useGameContext();  
+// Check session
   const checkSession = useQuery<{
     id_player: string;
     balance: number;
@@ -43,7 +45,7 @@ export const useMobuleWebhook = (params: WebhookParams) => {
         return { balance: 0 };
       }
     },
-    enabled: !!session,
+    enabled: mode === 'real',
     refetchInterval: 5000, // Refetch every 5 seconds
   });
 
@@ -76,7 +78,7 @@ export const useMobuleWebhook = (params: WebhookParams) => {
         return { balance: 0 };
       }
     },
-    enabled: !!session,
+    enabled: mode === 'real',
     refetchInterval: 5000,
   });
 
@@ -211,5 +213,7 @@ export const useMobuleWebhook = (params: WebhookParams) => {
     depositWin,
     cancelTransaction,
     completeTransaction,
+    mockBalance,
+    setMockBalance,
   };
 };

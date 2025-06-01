@@ -18,6 +18,7 @@ export class Service {
     mines,
     betAmount,
     session,
+    mode = 'real',
   }: {
     userId: string;
     rows: number;
@@ -25,6 +26,7 @@ export class Service {
     mines: number;
     betAmount: number;
     session: string;
+    mode?: 'demo' | 'real';
   }) {
     const grid = this.generateInitialGrid(rows, cols, mines);
     const game = await this.prisma.game.create({
@@ -37,28 +39,30 @@ export class Service {
       },
     });
 
-    const response = await fetch(
-      `${process.env.CENTRAL_API}/api/mobule/withdraw.bet`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    if (mode === 'real') {
+      const response = await fetch(
+        `${process.env.CENTRAL_API}/api/mobule/withdraw.bet`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            session: session,
+            'game.provider': 'tonza',
+            currency: 'USD',
+            amount: game.betAmount * 100,
+            round_id: game.roundId,
+            trx_id: game.betTRXId,
+          }),
         },
-        body: JSON.stringify({
-          session: session,
-          'game.provider': 'tonza',
-          currency: 'USD',
-          amount: game.betAmount * 100,
-          round_id: game.roundId,
-          trx_id: game.betTRXId,
-        }),
-      },
-    );
+      );
 
-    const data = await response.json();
-    if (data.status !== 200) {
-      console.error(data);
-      throw new Error('Failed to process bet with Mobule');
+      const data = await response.json();
+      if (data.status !== 200) {
+        console.error(data);
+        throw new Error('Failed to process bet with Mobule');
+      }
     }
 
     return {
@@ -68,7 +72,14 @@ export class Service {
   }
 
   // Reveal a cell and update the game state
-  async revealCell(gameId: string, row: number, col: number) {
+  async revealCell(
+    gameId: string,
+    row: number,
+    col: number,
+    multiplier: number,
+    session: string,
+    mode: 'demo' | 'real' = 'real',
+  ) {
     const game = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!game) throw new Error('Game not found');
     const grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
@@ -84,6 +95,32 @@ export class Service {
       );
       if (allSafeCellsRevealed) {
         newState = GameState.VICTORY;
+
+        if (mode === 'real') {
+          const response = await fetch(
+            `${process.env.CENTRAL_API}/api/mobule/deposit.win`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                session: session,
+                'game.provider': 'tonza',
+                currency: 'USD',
+                amount: game.betAmount * 100 * multiplier,
+                round_id: game.roundId,
+                trx_id: game.winTRXId,
+              }),
+            },
+          );
+
+          const data = await response.json();
+          if (data.status !== 200) {
+            console.error(data);
+            throw new Error('Failed to process win with Mobule');
+          }
+        }
       } else {
         newState = GameState.CASH_OUT_AVAILABLE;
       }
@@ -100,7 +137,12 @@ export class Service {
   }
 
   // Cash out (end the game with a win if not already lost)
-  async cashOut(gameId: string, session: string, multiplier: number) {
+  async cashOut(
+    gameId: string,
+    session: string,
+    multiplier: number,
+    mode: 'demo' | 'real',
+  ) {
     const game = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!game) throw new Error('Game not found');
     if (game.state === GameState.LOSE || game.state === GameState.VICTORY) {
@@ -118,28 +160,30 @@ export class Service {
       data: { grid, state: GameState.VICTORY },
     });
 
-    const response = await fetch(
-      `${process.env.CENTRAL_API}/api/mobule/deposit.win`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+    if (mode === 'real') {
+      const response = await fetch(
+        `${process.env.CENTRAL_API}/api/mobule/deposit.win`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            session: session,
+            'game.provider': 'tonza',
+            currency: 'USD',
+            amount: game.betAmount * 100 * multiplier,
+            round_id: game.roundId,
+            trx_id: game.winTRXId,
+          }),
         },
-        body: JSON.stringify({
-          session: session,
-          'game.provider': 'tonza',
-          currency: 'USD',
-          amount: game.betAmount * 100 * multiplier,
-          round_id: game.roundId,
-          trx_id: game.winTRXId,
-        }),
-      },
-    );
+      );
 
-    const data = await response.json();
-    if (data.status !== 200) {
-      console.error(data);
-      throw new Error('Failed to process win with Mobule');
+      const data = await response.json();
+      if (data.status !== 200) {
+        console.error(data);
+        throw new Error('Failed to process win with Mobule');
+      }
     }
 
     return {

@@ -20,11 +20,15 @@ const appRouter = t.router({
       mines: z.number(),
       betAmount: z.number(),
       session: z.string(),
+      mode: z.enum(['demo', 'real']),
     })).output(z.any()).mutation(async () => "PLACEHOLDER_DO_NOT_REMOVE" as any),
     revealCell: publicProcedure.input(z.object({
       gameId: z.string(),
       row: z.number(),
       col: z.number(),
+      multiplier: z.number(),
+      session: z.string(),
+      mode: z.enum(['demo', 'real']),
     })).output(z.object({
       gameId: z.string(),
       grid: z.array(z.array(z.string())),
@@ -49,6 +53,7 @@ const appRouter = t.router({
       gameId: z.string(),
       session: z.string(),
       multiplier: z.number(),
+      mode: z.enum(['demo', 'real']),
     })).output(z.object({
       gameId: z.string(),
       grid: z.array(z.array(z.string())),
