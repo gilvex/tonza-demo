@@ -96,7 +96,7 @@ export function BetPanel() {
           <div className="flex items-center gap-1">
             <p className="text-[#9EA8DD]">Balance: {isLoading || checkBalance.isLoading ? "..." : userBalance / 100}</p>
             <Image
-              src={`/${displayCurrency}.png`}
+              src={`/${displayCurrency.toLowerCase()}.png`}
               alt={displayCurrency}
               className="size-6"
               width={24}
@@ -106,7 +106,7 @@ export function BetPanel() {
         </div>
         <div className="border border-[#1A2340] bg-[#01021E] rounded-xl font-bold flex items-center p-2.5 h-10 lg:h-16 gap-2.5">
           <Image
-            src={`/${displayCurrency}.png`}
+            src={`/${displayCurrency.toLowerCase()}.png`}
             alt={displayCurrency}
             className="size-6"
             width={24}
