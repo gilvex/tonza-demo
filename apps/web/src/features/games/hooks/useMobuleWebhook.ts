@@ -7,19 +7,19 @@ interface WebhookParams {
   amount?: number;
   trx_id?: string;
   round_id?: string;
-  mode?: "demo" | "real";
 }
 
 export const useMobuleWebhook = (params: WebhookParams) => {
-  const { session, currency, mode } = params;
-const { setMockBalance, mockBalance } = useGameContext();  
-// Check session
+  const { session, currency } = params;
+  const { setMockBalance, mockBalance, mode } = useGameContext();
+  // Check session
   const checkSession = useQuery<{
     id_player: string;
     balance: number;
   }>({
     queryKey: ["mobule", "check.session", session, currency],
     queryFn: async () => {
+      console.log("Checking session:", session, mode);
       if (!session) return { balance: 0 };
 
       const response = await fetch(
@@ -45,7 +45,7 @@ const { setMockBalance, mockBalance } = useGameContext();
         return { balance: 0 };
       }
     },
-    enabled: mode === 'real',
+    enabled: mode === "real",
     refetchInterval: 5000, // Refetch every 5 seconds
   });
 
@@ -78,7 +78,7 @@ const { setMockBalance, mockBalance } = useGameContext();
         return { balance: 0 };
       }
     },
-    enabled: mode === 'real',
+    enabled: mode === "real",
     refetchInterval: 5000,
   });
 

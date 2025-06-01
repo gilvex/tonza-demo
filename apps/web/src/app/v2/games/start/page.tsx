@@ -11,7 +11,6 @@ export default function GamePage() {
   // const currency = searchParams?.get("currency");
   // const lang = searchParams?.get("lang");
   const session = searchParams?.get("partner.session");
-  const mode = searchParams?.get("mode");
 
   if (gameAlias !== "mines") {
     return <div>Invalid game</div>;
@@ -19,7 +18,7 @@ export default function GamePage() {
 
   return (
     <div className="w-full h-screen">
-      <Game session={session} mode={mode as "demo" | "real"} />
+      <Game session={session} mode={"real"} />
     </div>
   );
 }
