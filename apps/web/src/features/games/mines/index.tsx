@@ -20,7 +20,6 @@ export function MineGame() {
   );
 
   const { game, currentMultiplier, multipliers } = useGame();
-  console.log("currentMultiplier", currentMultiplier);
   const multiplier = multipliers[currentMultiplier];
 
   useEffect(() => {

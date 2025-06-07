@@ -44,5 +44,6 @@ model Game {
   mines      Int
   updatedAt  DateTime   @updatedAt
   betAmount  Float
+  backspin   Boolean    @default(false)
 }
 

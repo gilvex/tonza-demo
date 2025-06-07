@@ -29,7 +29,7 @@ export class Service {
     mode?: 'demo' | 'real';
   }) {
     const grid = this.generateInitialGrid(rows, cols, mines);
-    const game = await this.prisma.game.create({
+    let game = await this.prisma.game.create({
       data: {
         userId,
         grid,
@@ -62,6 +62,14 @@ export class Service {
       if (data.status !== 200) {
         console.error(data);
         throw new Error('Failed to process bet with Mobule');
+      } else {
+        game = await this.prisma.game.update({
+          where: { id: game.id },
+          data: {
+            backspin: data.response.backSpin,
+          },
+        });
+        console.log('Bet processed successfully with Mobule', data, game);
       }
     }
 
@@ -87,6 +95,33 @@ export class Service {
     if (grid[row][col]?.revealed) throw new Error('Cell already revealed');
     grid[row][col].revealed = true;
     let newState = game.state;
+    console.log(
+      'Revealing cell at',
+      row,
+      col,
+      'with value',
+      grid[row][col].value,
+      'isBackspin enabled:',
+      game.backspin,
+    );
+    if (game.backspin) {
+      const totalRevealed = grid.flat().filter((cell) => cell.revealed).length;
+      grid[row][col].value = 'gem'; // Always reveal as gem on backspin
+
+      if (totalRevealed === 24 - game.mines) {
+        // Convert all unrevealed cells to bombs
+        grid.forEach((row) => {
+          row.forEach((cell) => {
+            if (!cell.revealed) {
+              cell.value = 'bomb';
+              cell.revealed = true; // Reveal all remaining cells
+            }
+          });
+        });
+        newState = GameState.VICTORY;
+      }
+    }
+
     if (grid[row][col].value === 'bomb') {
       newState = GameState.LOSE;
     } else {

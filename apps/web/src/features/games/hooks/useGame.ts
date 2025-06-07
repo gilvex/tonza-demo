@@ -16,10 +16,10 @@ export enum GameState {
 }
 
 const calculateMultipliers = (mines: number): Multiplier[] => {
-  const maxGems = 24 - mines; // Total cells minus mines
+  const maxGems = 24 - mines === 0 ? 1 : 24 - mines; // Total cells minus mines
   return Array.from({ length: maxGems }, (_, i) => ({
-    value: `${(1 + (1 + i) * (mines / (24 - mines))).toFixed(2)}x`,
-    factor: Number((1 + (1 + i) * (mines / (24 - mines))).toFixed(2)),
+    value: `${(1 + (1 + i) * (mines / maxGems)).toFixed(2)}x`,
+    factor: Number((1 + (1 + i) * (mines / maxGems)).toFixed(2)),
     borderColor: "#1A2340",
     backgroundColor: "transparent",
     growColor: "#1A2340",
@@ -80,7 +80,7 @@ export function useGame() {
   ]);
 
   const multipliers = calculateMultipliers(mines);
-
+  
   const currentMultiplier = useMemo(() => {
     if (!grid) return 1;
     return Math.max(0, grid.filter((cell) => cell.isGem && cell.isRevealed).length - 1);
