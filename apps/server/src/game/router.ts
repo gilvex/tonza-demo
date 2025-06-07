@@ -60,7 +60,6 @@ export class Router {
       gameId: z.string(),
       row: z.number(),
       col: z.number(),
-      multiplier: z.number(),
       session: z.string(),
       mode: z.enum(['demo', 'real']),
     }),
@@ -77,7 +76,6 @@ export class Router {
       gameId: string;
       row: number;
       col: number;
-      multiplier: number;
       session: string;
       mode?: 'demo' | 'real';
     },
@@ -87,7 +85,6 @@ export class Router {
         input.gameId,
         input.row,
         input.col,
-        input.multiplier,
         input.session,
         input.mode || 'real',
       );
@@ -134,7 +131,6 @@ export class Router {
     input: z.object({
       gameId: z.string(),
       session: z.string(),
-      multiplier: z.number(),
       mode: z.enum(['demo', 'real']),
     }),
     output: z.object({
@@ -149,7 +145,6 @@ export class Router {
     input: {
       gameId: string;
       session: string;
-      multiplier: number;
       mode?: 'demo' | 'real';
     },
   ) {
@@ -157,7 +152,6 @@ export class Router {
       return await this.service.cashOut(
         input.gameId,
         input.session,
-        input.multiplier,
         input.mode || 'real',
       );
     } catch (e) {

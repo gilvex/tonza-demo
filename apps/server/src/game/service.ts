@@ -6,6 +6,24 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@server/prisma.service';
 import { GameState } from '@prisma/client';
 
+const calcMultiplier = (
+  game: { mines: number; betAmount: number },
+  grid: { value: 'bomb' | 'gem'; revealed: boolean }[][],
+) => {
+  const maxGems = 25 - game.mines;
+  const mines = game.mines;
+  const gemsRevealed = grid
+    .flat()
+    .filter((cell) => cell.revealed && cell.value === 'gem').length;
+  console.log(
+    'Calculating multiplier:',
+    `mines: ${mines}, gemsRevealed: ${gemsRevealed}, maxGems: ${maxGems}`,
+    'Total win:',
+    game.betAmount * Number((1 + gemsRevealed * (mines / maxGems)).toFixed(2)),
+  );
+  return Number((1 + gemsRevealed * (mines / maxGems)).toFixed(2));
+};
+
 @Injectable()
 export class Service {
   constructor(private prisma: PrismaService) {}
@@ -69,7 +87,7 @@ export class Service {
             backspin: data.response.backSpin,
           },
         });
-        console.log('Bet processed successfully with Mobule', data, game);
+        console.log('Bet processed successfully with Mobule', game.id);
       }
     }
 
@@ -84,13 +102,12 @@ export class Service {
     gameId: string,
     row: number,
     col: number,
-    multiplier: number,
     session: string,
     mode: 'demo' | 'real' = 'real',
   ) {
     const game = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!game) throw new Error('Game not found');
-    const grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
+    let grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
 
     if (grid[row][col]?.revealed) throw new Error('Cell already revealed');
     grid[row][col].revealed = true;
@@ -105,10 +122,19 @@ export class Service {
       game.backspin,
     );
     if (game.backspin) {
+      // grid = grid.map((row) => {
+      //   return row.map((cell) => {
+      //     if (!cell.revealed) {
+      //       cell.value = 'bomb';
+      //     }
+      //     return cell;
+      //   });
+      // });
+
       const totalRevealed = grid.flat().filter((cell) => cell.revealed).length;
       grid[row][col].value = 'gem'; // Always reveal as gem on backspin
 
-      if (totalRevealed === 24 - game.mines) {
+      if (totalRevealed === 25 - game.mines) {
         // Convert all unrevealed cells to bombs
         grid.forEach((row) => {
           row.forEach((cell) => {
@@ -132,6 +158,8 @@ export class Service {
         newState = GameState.VICTORY;
 
         if (mode === 'real') {
+          const multiplier = calcMultiplier(game, grid);
+
           const response = await fetch(
             `${process.env.CENTRAL_API}/api/mobule/deposit.win`,
             {
@@ -172,12 +200,7 @@ export class Service {
   }
 
   // Cash out (end the game with a win if not already lost)
-  async cashOut(
-    gameId: string,
-    session: string,
-    multiplier: number,
-    mode: 'demo' | 'real',
-  ) {
+  async cashOut(gameId: string, session: string, mode: 'demo' | 'real') {
     const game = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!game) throw new Error('Game not found');
     if (game.state === GameState.LOSE || game.state === GameState.VICTORY) {
@@ -185,6 +208,8 @@ export class Service {
     }
     const grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
     // Reveal all cells
+    const multiplier = calcMultiplier(game, grid);
+
     for (const row of grid) {
       for (const cell of row) {
         cell.revealed = true;

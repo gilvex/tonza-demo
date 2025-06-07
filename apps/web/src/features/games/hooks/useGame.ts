@@ -16,7 +16,7 @@ export enum GameState {
 }
 
 const calculateMultipliers = (mines: number): Multiplier[] => {
-  const maxGems = 24 - mines === 0 ? 1 : 24 - mines; // Total cells minus mines
+  const maxGems = 25 - mines; // Total cells minus mines
   return Array.from({ length: maxGems }, (_, i) => ({
     value: `${(1 + (1 + i) * (mines / maxGems)).toFixed(2)}x`,
     factor: Number((1 + (1 + i) * (mines / maxGems)).toFixed(2)),
@@ -151,7 +151,6 @@ export function useRevealCell({ cellId }: { cellId: number }) {
         row: Math.floor(cellId / 5),
         col: cellId % 5,
         session,
-        multiplier: multipliers[currentMultiplier].factor,
         mode,
       });
 
@@ -195,7 +194,6 @@ export function useCashOut() {
       const result = await cashOut({
         gameId: game?.id,
         session,
-        multiplier: multipliers[currentMultiplier].factor,
         mode,
       });
       setMockBalance(

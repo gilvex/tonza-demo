@@ -26,7 +26,6 @@ const appRouter = t.router({
       gameId: z.string(),
       row: z.number(),
       col: z.number(),
-      multiplier: z.number(),
       session: z.string(),
       mode: z.enum(['demo', 'real']),
     })).output(z.object({
@@ -52,7 +51,6 @@ const appRouter = t.router({
     cashOut: publicProcedure.input(z.object({
       gameId: z.string(),
       session: z.string(),
-      multiplier: z.number(),
       mode: z.enum(['demo', 'real']),
     })).output(z.object({
       gameId: z.string(),
