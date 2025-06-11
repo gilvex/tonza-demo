@@ -94,7 +94,7 @@ export function BetPanel() {
         <div className="flex justify-between items-center">
           <p className="text-[#9EA8DD]">Bet Amount:</p>
           <div className="flex items-center gap-1">
-            <p className="text-[#9EA8DD]">Balance: {isLoading || checkBalance.isLoading ? "..." : userBalance / 100}</p>
+            <p className="text-[#9EA8DD]">Balance: {isLoading || checkBalance.isLoading ? "..." : userBalance / 100} {mode === 'demo' ? "FUN" : "USD"}</p>
             <Image
               src={`/${displayCurrency.toLowerCase()}.png`}
               alt={displayCurrency}
