@@ -2,7 +2,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMobuleWebhook } from "./useMobuleWebhook";
 import { useTRPC } from "@web/shared/trpc/client";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { convertServerGrid } from "../mines/lib/helper";
 import { useGameContext } from "../context/GameContext";
 import { Multiplier } from "../mines/lib/types";
@@ -37,11 +37,12 @@ export function useGame() {
     mode = "demo",
     mines,
     setMines,
+    revealedCells,
+    setRevealedCells
   } = useGameContext();
-  const { checkSession, checkBalance, setMockBalance } =
-    useMobuleWebhook({
-      session,
-    });
+  const { checkSession, checkBalance, setMockBalance } = useMobuleWebhook({
+    session,
+  });
   const { mutateAsync: createGame } = useMutation(
     api.game.createGame.mutationOptions()
   );
@@ -80,11 +81,6 @@ export function useGame() {
   ]);
 
   const multipliers = calculateMultipliers(mines);
-  
-  const currentMultiplier = useMemo(() => {
-    if (!grid) return 1;
-    return Math.max(0, grid.filter((cell) => cell.isGem && cell.isRevealed).length - 1);
-  }, [grid]);
 
   return {
     game: game ? { ...game, grid } : null,
@@ -96,7 +92,7 @@ export function useGame() {
 
       setIsLoading(true);
       const result = await createGame({
-        session: session || "", 
+        session: session || "",
         userId: checkSession.data?.id_player || "",
         mines,
         rows: 5,
@@ -106,22 +102,23 @@ export function useGame() {
       });
       setGame(result);
       setMockBalance((balance) => balance - betAmount * 100); // Deduct bet amount from mock balance
-      if(mode === 'real') {
-        await checkBalance.refetch()
-      };
+      if (mode === "real") {
+        await checkBalance.refetch();
+      }
       setIsLoading(false);
     },
     _setGame: setGame,
     mode,
     multipliers,
-    currentMultiplier,
+    currentMultiplier: revealedCells - 1,
     session,
     mines,
     setMines,
     resetGame: () => {
       setGame(null);
-      // setMines(1);
+      setRevealedCells?.(0);
     },
+    setRevealedCells
   };
 }
 
@@ -133,6 +130,7 @@ export function useRevealCell({ cellId }: { cellId: number }) {
     currentMultiplier,
     multipliers,
     mode = "demo",
+    setRevealedCells,
   } = useGame();
   const { setMockBalance } = useMobuleWebhook({ session, currency: "USD" });
   const api = useTRPC();
@@ -153,7 +151,7 @@ export function useRevealCell({ cellId }: { cellId: number }) {
         session,
         mode,
       });
-
+      setRevealedCells((prev) => prev + 1);
       _setGame((prevGame) => {
         if (!prevGame) return null;
         return {
@@ -167,7 +165,7 @@ export function useRevealCell({ cellId }: { cellId: number }) {
         setMockBalance(
           (balance) =>
             balance +
-            game.betAmount * multipliers[currentMultiplier].factor * 100
+            game.betAmount * multipliers[currentMultiplier]?.factor * 100
         );
       }
     },
@@ -198,14 +196,18 @@ export function useCashOut() {
       });
       setMockBalance(
         (balance) =>
-          balance + game.betAmount * multipliers[currentMultiplier].factor * 100
+          balance + game.betAmount * multipliers[currentMultiplier]?.factor * 100
       ); // Add winnings to mock balance
-      if(mode === 'real') {
-        await checkBalance.refetch()
-      };
+      if (mode === "real") {
+        await checkBalance.refetch();
+      }
       _setGame((game) => {
         if (!game) return null;
-        return { ...game, state: GameState.VICTORY };
+        return {
+          ...game,
+          grid: result.grid as any,
+          state: GameState.VICTORY,
+        };
       });
       return result;
     },

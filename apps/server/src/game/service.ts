@@ -107,7 +107,7 @@ export class Service {
   ) {
     const game = await this.prisma.game.findUnique({ where: { id: gameId } });
     if (!game) throw new Error('Game not found');
-    let grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
+    const grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
 
     if (grid[row][col]?.revealed) throw new Error('Cell already revealed');
     grid[row][col].revealed = true;
@@ -155,6 +155,11 @@ export class Service {
         r.every((cell) => cell.value === 'bomb' || cell.revealed),
       );
       if (allSafeCellsRevealed) {
+        grid.forEach((row) => {
+          row.forEach((cell) => {
+            cell.revealed = true; // Reveal all remaining cells
+          });
+        });
         newState = GameState.VICTORY;
 
         if (mode === 'real') {
@@ -209,12 +214,56 @@ export class Service {
     const grid = game.grid as { value: 'bomb' | 'gem'; revealed: boolean }[][];
     // Reveal all cells
     const multiplier = calcMultiplier(game, grid);
+    const uncoveredGems =
+      25 -
+      game.mines -
+      grid.flat().filter((cell) => cell.revealed && cell.value === 'gem')
+        .length;
 
-    for (const row of grid) {
-      for (const cell of row) {
-        cell.revealed = true;
+    if (game.backspin) {
+      // First, turn all unrevealed cells to bombs
+      grid.forEach((row) => {
+        row.forEach((cell) => {
+          if (!cell.revealed) {
+            cell.value = 'bomb';
+          }
+        });
+      });
+
+      // Get all unrevealed positions
+      const unrevealedPositions: [number, number][] = [];
+      grid.forEach((row, i) => {
+        row.forEach((cell, j) => {
+          if (!cell.revealed) {
+            unrevealedPositions.push([i, j]);
+          }
+        });
+      });
+
+      // Randomly select positions for gems
+      for (let i = 0; i < uncoveredGems; i++) {
+        if (unrevealedPositions.length === 0) break;
+        const randomIndex = Math.floor(
+          Math.random() * unrevealedPositions.length,
+        );
+        const [row, col] = unrevealedPositions.splice(randomIndex, 1)[0];
+        grid[row][col].value = 'gem';
       }
+
+      // Reveal all cells
+      grid.forEach((row) => {
+        row.forEach((cell) => {
+          cell.revealed = true;
+        });
+      });
     }
+
+    grid.forEach((row) => {
+      row.forEach((cell) => {
+        cell.revealed = true; // Reveal all remaining cells
+      });
+    });
+
     await this.prisma.game.update({
       where: { id: gameId },
       data: { grid, state: GameState.VICTORY },

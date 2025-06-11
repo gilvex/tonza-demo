@@ -219,7 +219,7 @@ export function BetPanel() {
           {game?.state === GameState.LOSE && `💣`}
           {game?.state === GameState.AWAITING_FIRST_INPUT && "Select the cell"}
           {game?.state === GameState.CASH_OUT_AVAILABLE &&
-            `Take ${(betAmount * multiplier.factor).toFixed(2)} ${displayCurrency.toUpperCase()}`}
+            `Take ${(betAmount * (multiplier?.factor ?? 0)).toFixed(2)} ${displayCurrency.toUpperCase()}`}
         </Button>
       </div>
     </div>
