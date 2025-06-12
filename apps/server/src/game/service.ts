@@ -46,6 +46,9 @@ export class Service {
     session: string;
     mode?: 'demo' | 'real';
   }) {
+    console.log(
+      `Creating game for user ${userId} with rows: ${rows}, cols: ${cols}, mines: ${mines}, betAmount: ${betAmount}, mode: ${mode}`,
+    );
     const grid = this.generateInitialGrid(rows, cols, mines);
     let game = await this.prisma.game.create({
       data: {
@@ -149,6 +152,11 @@ export class Service {
     }
 
     if (grid[row][col].value === 'bomb') {
+      grid.forEach((row) => {
+        row.forEach((cell) => {
+          cell.revealed = true;
+        });
+      });
       newState = GameState.LOSE;
     } else {
       const allSafeCellsRevealed = grid.every((r) =>
@@ -339,7 +347,7 @@ export class Service {
     );
     const total = rows * cols;
     const cells = Array(total).fill('gem');
-    for (let i = 0; i <= mines; i++) cells[i] = 'bomb';
+    for (let i = 1; i <= mines; i++) cells[i] = 'bomb';
     for (let i = cells.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [cells[i], cells[j]] = [cells[j], cells[i]];
