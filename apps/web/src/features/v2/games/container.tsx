@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import React, { useEffect, useState } from "react";
 import { Panel } from "./panel";
 import { BetPanel } from "@web/features/games/mines/ui/BetPanel";
+import { cn } from "@web/lib/utils";
 
 export interface GameContainerProps {
   mode?: "demo" | "real";
@@ -28,7 +29,7 @@ export const DynamicGameContainer = dynamic(
 );
 
 function GameContainerInner() {
-  const { game, resetGame } = useGame();
+  const { game, resetGame, isLoading } = useGame();
 
   useEffect(() => {
     // Only set up the timer if we're in a terminal state
@@ -42,7 +43,7 @@ function GameContainerInner() {
   }, [game?.state, resetGame]); // Only depend on state changes
 
   return (
-    <div className="flex flex-col items-center gap-3 pb-3 lg:flex-row w-full lg:max-w-full lg:items-end h-full">
+    <div className={cn("flex flex-col items-center gap-3 pb-3 lg:flex-row w-full lg:max-w-full lg:items-end h-full transition-all", isLoading ? "blur-lg" : "blur-0" )}>
       <Panel />
       <BetPanel />
     </div>

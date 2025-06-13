@@ -39,6 +39,8 @@ interface GameContextType {
   setMockBalance: Dispatch<SetStateAction<number>>;
   revealedCells: number;
   setRevealedCells: Dispatch<SetStateAction<number>>;
+  initialGameFetched: boolean;
+  setInitialGameFetched: Dispatch<SetStateAction<boolean>>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -52,6 +54,7 @@ export function GameProvider({
   session?: string | null;
   mode?: "demo" | "real";
 }) {
+  const [initialGameFetched, setInitialGameFetched] = useState(false);
   const [game, setGame] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mines, setMines] = useState(1);
@@ -76,8 +79,10 @@ export function GameProvider({
         setMines,
         mockBalance,
         setMockBalance,
-        revealedCells, 
-        setRevealedCells
+        revealedCells,
+        setRevealedCells,
+        initialGameFetched,
+        setInitialGameFetched,
       }}
     >
       {children}

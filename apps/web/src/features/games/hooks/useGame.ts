@@ -2,7 +2,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useMobuleWebhook } from "./useMobuleWebhook";
 import { useTRPC } from "@web/shared/trpc/client";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { convertServerGrid } from "../mines/lib/helper";
 import { useGameContext } from "../context/GameContext";
 import { Multiplier } from "../mines/lib/types";
@@ -38,14 +38,14 @@ export function useGame() {
     mines,
     setMines,
     revealedCells,
-    setRevealedCells
+    setRevealedCells,
+    initialGameFetched,
+    setInitialGameFetched,
   } = useGameContext();
   const { checkSession, checkBalance, setMockBalance } = useMobuleWebhook({
     session,
   });
-  const { mutateAsync: createGame } = useMutation(
-    api.game.createGame.mutationOptions()
-  );
+  const { mutateAsync } = useMutation(api.game.createGame.mutationOptions());
 
   const grid = convertServerGrid((game?.grid as unknown as string[][]) ?? []);
 
@@ -61,37 +61,44 @@ export function useGame() {
   );
 
   useEffect(() => {
+    if (initialGameFetched) return;
     if (!game && lastUnfinishedGame.data) {
       setGame({
         ...lastUnfinishedGame.data,
         state: lastUnfinishedGame.data.state as GameState,
       });
       setMines(lastUnfinishedGame.data.mines);
+      setRevealedCells(
+        lastUnfinishedGame.data.grid.filter((row: any) =>
+          row.some((cell: any) => cell === "gem")
+        ).length
+      );
+      setInitialGameFetched(true);
       setIsLoading(false);
     } else if (!lastUnfinishedGame.isLoading && !lastUnfinishedGame.data) {
       setIsLoading(false);
     }
   }, [
     game,
+    initialGameFetched,
     lastUnfinishedGame.data,
     lastUnfinishedGame.isLoading,
     setGame,
+    setInitialGameFetched,
     setIsLoading,
     setMines,
+    setRevealedCells,
   ]);
 
   const multipliers = calculateMultipliers(mines);
-
-  return {
-    game: game ? { ...game, grid } : null,
-    isLoading,
-    createGame: async (mines: number, betAmount: number) => {
+  const createGame = useCallback(
+    async (mines: number, betAmount: number) => {
       if (!session && mode === "real") {
         throw new Error("Session not found");
       }
 
       setIsLoading(true);
-      const result = await createGame({
+      const result = await mutateAsync({
         session: session || "",
         userId: checkSession.data?.id_player || "",
         mines,
@@ -107,18 +114,36 @@ export function useGame() {
       }
       setIsLoading(false);
     },
-    _setGame: setGame,
+    [
+      checkBalance,
+      checkSession.data?.id_player,
+      mode,
+      mutateAsync,
+      session,
+      setGame,
+      setIsLoading,
+      setMockBalance,
+    ]
+  );
+  const resetGame = useCallback(() => {
+    setGame(null);
+    setRevealedCells?.(0);
+    lastUnfinishedGame.refetch();
+  }, [lastUnfinishedGame, setGame, setRevealedCells]);
+
+  return {
+    game: game ? { ...game, grid } : null,
+    isLoading,
     mode,
     multipliers,
     currentMultiplier: revealedCells - 1,
     session,
     mines,
+    createGame,
     setMines,
-    resetGame: () => {
-      setGame(null);
-      setRevealedCells?.(0);
-    },
-    setRevealedCells
+    resetGame,
+    setRevealedCells,
+    _setGame: setGame,
   };
 }
 
@@ -134,41 +159,52 @@ export function useRevealCell({ cellId }: { cellId: number }) {
   } = useGame();
   const { setMockBalance } = useMobuleWebhook({ session, currency: "USD" });
   const api = useTRPC();
-  const { mutateAsync: revealCell } = useMutation(
-    api.game.revealCell.mutationOptions()
-  );
+  const { mutateAsync } = useMutation(api.game.revealCell.mutationOptions());
+
+  const revealCell = useCallback(async () => {
+    if (!game || !session) {
+      throw new Error("Game not found");
+    }
+
+    const result = await mutateAsync({
+      gameId: game.id,
+      row: Math.floor(cellId / 5),
+      col: cellId % 5,
+      session,
+      mode,
+    });
+    setRevealedCells((prev) => prev + 1);
+    _setGame((prevGame) => {
+      if (!prevGame) return null;
+      return {
+        ...prevGame,
+        ...result,
+        grid: result.grid as any,
+        state: result.state as GameState,
+      };
+    });
+    if (result.state === GameState.VICTORY) {
+      setMockBalance(
+        (balance) =>
+          balance +
+          game.betAmount * multipliers[currentMultiplier]?.factor * 100
+      );
+    }
+  }, [
+    _setGame,
+    cellId,
+    currentMultiplier,
+    game,
+    mode,
+    multipliers,
+    mutateAsync,
+    session,
+    setMockBalance,
+    setRevealedCells,
+  ]);
 
   return {
-    revealCell: async () => {
-      if (!game || !session) {
-        throw new Error("Game not found");
-      }
-
-      const result = await revealCell({
-        gameId: game.id,
-        row: Math.floor(cellId / 5),
-        col: cellId % 5,
-        session,
-        mode,
-      });
-      setRevealedCells((prev) => prev + 1);
-      _setGame((prevGame) => {
-        if (!prevGame) return null;
-        return {
-          ...prevGame,
-          ...result,
-          grid: result.grid as any,
-          state: result.state as GameState,
-        };
-      });
-      if (result.state === GameState.VICTORY) {
-        setMockBalance(
-          (balance) =>
-            balance +
-            game.betAmount * multipliers[currentMultiplier]?.factor * 100
-        );
-      }
-    },
+    revealCell,
   };
 }
 
@@ -180,36 +216,50 @@ export function useCashOut() {
     session,
     currency: "USD",
   });
-  const { mutateAsync: cashOut } = useMutation(
-    api.game.cashOut.mutationOptions()
-  );
+  const { mutateAsync } = useMutation(api.game.cashOut.mutationOptions());
 
-  return {
-    cashOut: async () => {
-      if (!game || !session) {
-        throw new Error("Game or session not found");
-      }
-      const result = await cashOut({
-        gameId: game?.id,
-        session,
-        mode,
-      });
+  const cashOut = useCallback(async () => {
+    if (!game || !session) {
+      throw new Error("Game or session not found");
+    }
+    const result = await mutateAsync({
+      gameId: game?.id,
+      session,
+      mode,
+    });
+
+    if (mode === "real") {
+      await checkBalance.refetch();
+    } else {
       setMockBalance(
         (balance) =>
-          balance + game.betAmount * multipliers[currentMultiplier]?.factor * 100
+          balance +
+          game.betAmount * multipliers[currentMultiplier]?.factor * 100
       ); // Add winnings to mock balance
-      if (mode === "real") {
-        await checkBalance.refetch();
-      }
-      _setGame((game) => {
-        if (!game) return null;
-        return {
-          ...game,
-          grid: result.grid as any,
-          state: GameState.VICTORY,
-        };
-      });
-      return result;
-    },
+    }
+
+    _setGame((game) => {
+      if (!game) return null;
+      return {
+        ...game,
+        grid: result.grid as any,
+        state: GameState.VICTORY,
+      };
+    });
+    return result;
+  }, [
+    _setGame,
+    mutateAsync,
+    checkBalance,
+    currentMultiplier,
+    game,
+    mode,
+    multipliers,
+    session,
+    setMockBalance,
+  ]);
+
+  return {
+    cashOut,
   };
 }
